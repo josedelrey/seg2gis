@@ -35,6 +35,13 @@
     "seed": 42,
     "experiment_log_path": "results/experiments_inria155.csv"
   },
+  "loss": {
+    "name": "dice_bce",
+    "dice_weight": 1.0,
+    "bce_weight": 1.0,
+    "boundary_weight": 0.0,
+    "boundary_width": 3
+  },
   "evaluation": {
     "threshold": 0.5,
     "tile_size": 256,
