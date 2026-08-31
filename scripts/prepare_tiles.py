@@ -17,6 +17,7 @@ from dataset import (
     describe_image_ids,
     image_id_list,
 )
+from path_safety import resolve_safe_tile_output_dir
 
 
 OFFICIAL_UNLABELED_TEST_SPLIT = "inria_official_test_unlabeled"
@@ -59,22 +60,13 @@ def require_value(value, key_name):
     return value
 
 
-def reset_output_dir(out_dir):
-    if out_dir is None:
-        raise ValueError("Tile output directory cannot be None.")
-
-    if not str(out_dir).strip() or str(out_dir).strip() == ".":
-        raise ValueError("Unsafe tile output directory. Refusing to delete it.")
-
-    output_path = Path(out_dir).resolve()
+def reset_output_dir(out_dir, protected_paths=()):
     repo_root = Path(__file__).resolve().parents[1]
-    filesystem_root = Path(output_path.anchor).resolve()
-
-    if output_path == repo_root:
-        raise ValueError("Unsafe tile output directory: cannot delete repository root.")
-
-    if output_path == filesystem_root:
-        raise ValueError("Unsafe tile output directory: cannot delete filesystem root.")
+    output_path = resolve_safe_tile_output_dir(
+        out_dir=out_dir,
+        repo_root=repo_root,
+        protected_paths=protected_paths,
+    )
 
     if output_path.exists():
         print(f"Removing existing tile output directory: {output_path}")
@@ -283,7 +275,10 @@ def main():
     print("Validation image ids:", describe_image_ids(val_image_ids))
     print("Test image ids:", describe_image_ids(test_image_ids))
 
-    reset_output_dir(out_dir)
+    reset_output_dir(
+        out_dir,
+        protected_paths=(image_dir, mask_dir, test_image_dir),
+    )
     process_labeled_split(
         "train",
         collect_image_mask_pairs(image_dir, mask_dir, train_image_ids),
