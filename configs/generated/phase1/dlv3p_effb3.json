@@ -83,7 +83,7 @@
   },
   "inference": {
     "image_path": null,
-    "model_path": "models/unet_effb3_256_noaug_e10.pth",
+    "model_path": "models/phase1/dlv3p_effb3.pth",
     "threshold": 0.5,
     "tile_size": 256,
     "stride": 128,

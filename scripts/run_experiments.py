@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -135,6 +135,11 @@ def set_nested_value(config, key_path, value):
     section[key_path[-1]] = value
 
 
+def resolve_generated_model_path(model_dir, run_name):
+    normalized_model_dir = str(model_dir).replace("\\", "/")
+    return str(PurePosixPath(normalized_model_dir) / f"{run_name}.pth")
+
+
 def build_training_config(base_config, exp):
     train_config = copy.deepcopy(base_config)
 
@@ -143,6 +148,20 @@ def build_training_config(base_config, exp):
             raise ValueError(f"Unsupported experiment field '{field}' in {exp}")
 
         set_nested_value(train_config, EXPERIMENT_FIELD_PATHS[field], value)
+
+    run_name = train_config.get("training", {}).get("run_name")
+    model_dir = train_config.get("model", {}).get("model_dir")
+
+    if not run_name or not model_dir:
+        raise ValueError(
+            "Generated training config requires training.run_name and model.model_dir."
+        )
+
+    set_nested_value(
+        train_config,
+        ("inference", "model_path"),
+        resolve_generated_model_path(model_dir, run_name),
+    )
 
     return train_config
 

@@ -156,31 +156,31 @@ The important convention is:
 
 ## Environment Setup
 
-This project is currently configured for the local conda environment named `cv`.
+The recommended setup uses Conda to create a Python 3.11 environment and pip to
+install the bounded project dependencies from `requirements.txt`.
 
-Use:
-
-```powershell
-conda activate cv
-```
-
-Python interpreter:
-
-```text
-C:\Users\rlyeh\miniconda3\envs\cv\python.exe
-```
-
-Install or refresh dependencies with:
+Create the environment:
 
 ```powershell
-C:\Users\rlyeh\miniconda3\envs\cv\python.exe -m pip install -r requirements.txt
+conda env create -f environment.yml
+conda activate seg2gis
 ```
 
-On Windows, the geospatial stack can be easier through conda-forge:
+Update an existing environment after dependency changes:
 
 ```powershell
-conda activate cv
-conda install -c conda-forge rasterio shapely geopandas
+conda env update -f environment.yml --prune
+conda activate seg2gis
+```
+
+For a pip-only installation, create and activate a virtual environment, then
+install the same dependency list:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
 ## Dataset
@@ -218,57 +218,57 @@ Run commands from the repository root.
 Prepare tiles:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python scripts/prepare_tiles.py --config configs/default.json
 ```
 
 Run the Phase 1 no-augmentation screening:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python scripts/run_experiments.py --experiments_config configs/experiments_phase1_noaug_baseline.yaml
 ```
 
 Run the Phase 2 augmented boundary-loss comparison:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python scripts/run_experiments.py --experiments_config configs/experiments_phase2_augmentation_boundary_loss.yaml
 ```
 
 Evaluate the selected model on full validation images:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python src/evaluate.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split val
 ```
 
 Evaluate the selected model on held-out full test images:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python src/evaluate.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split test
 ```
 
 Generate vector-quality metrics for the validation-selected post-processing configuration:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python scripts/vector_quality_table.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split test --threshold 0.47 --min_area 100 --open_kernel_size 3
 ```
 
 Generate component-level instance AP metrics for the validation-selected post-processing configuration:
 
 ```powershell
-conda activate cv
+conda activate seg2gis
 python scripts/instance_ap_table.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split test --threshold 0.47 --min_area 100 --open_kernel_size 3
 ```
 
 Run full-image inference and polygon export:
 
 ```powershell
-conda activate cv
-python scripts/predict_full_image.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --image_path data/AerialImageDataset/train/images/austin1.tif --model_path models/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth --output_name austin1_phase2_unet_effb3_aug_boundary_bce_w2_e50
+conda activate seg2gis
+python scripts/predict_full_image.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --image_path data/AerialImageDataset/train/images/austin1.tif --output_name austin1_phase2_unet_effb3_aug_boundary_bce_w2_e50
 ```
 
 Prediction outputs are written to `results/full_predictions/` by default:

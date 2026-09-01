@@ -90,7 +90,7 @@
   },
   "inference": {
     "image_path": null,
-    "model_path": "models/unet_effb3_256_noaug_e10.pth",
+    "model_path": "models/phase2_augmentation/phase2_unet_effb3_aug_dice_bce_e50.pth",
     "threshold": 0.5,
     "tile_size": 256,
     "stride": 128,
