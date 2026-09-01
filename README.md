@@ -213,18 +213,6 @@ results/figures/  curated qualitative and analytical figures
 The main result tables are committed as CSV files so reported values remain
 inspectable without rerunning GPU-intensive experiments.
 
-## Scope and limitations
-
-- The system is a research baseline and candidate-footprint generator, not an
-  automatic cadastral mapping system.
-- Semantic masks do not explicitly model instances, corners, topology, or
-  polygon vertices; nearby buildings can merge and small structures can be
-  missed.
-- Strict boundary quality remains substantially harder than approximate
-  overlap, as reflected by the gap between BF1 @2 px and BF1 @5 px.
-- Reported training results use one fixed seed; broader multi-seed and
-  cross-dataset evaluation would strengthen generalisation evidence.
-
 ## Dataset citation
 
 The benchmark was introduced by E. Maggiori, Y. Tarabalka, G. Charpiat, and
