@@ -1,180 +1,99 @@
-# seg2gis-buildings
+# seg2gis
 
-Semantic segmentation pipeline for extracting building footprints from aerial imagery and converting the predictions into GIS-style polygon outputs.
+![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![PyTorch 2.5](https://img.shields.io/badge/PyTorch-2.5-EE4C2C?logo=pytorch&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f)
 
-The repository is organized for a final master's thesis workflow: prepare tiles, train segmentation models, compare validation metrics, evaluate full aerial images, post-process masks, and export polygon footprints. The dataset itself stays in `data/` and is not modified by the cleanup.
+**From aerial pixels to GIS-ready building-footprint candidates.**
 
-## Current Best Result
+seg2gis is an end-to-end research pipeline for semantic building segmentation,
+full-scene inference, mask post-processing, contour simplification, and
+georeferenced GeoJSON export. It evaluates the complete raster-to-vector path
+instead of treating pixel overlap as the only measure of success.
 
-The current selected model is:
+![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
+
+<p align="center"><em>Aerial image → probability map → cleaned building mask → polygon overlay.</em></p>
+
+## What it does
+
+```text
+aerial scenes → image-level split → 256 px tiles → segmentation model
+              → overlapping full-image inference → mask cleanup
+              → contour extraction + simplification → GeoJSON
+```
+
+- Compares U-Net, FPN, and DeepLabV3+ segmentation models.
+- Supports geometric augmentation and boundary-weighted training.
+- Runs overlapping tiled inference on complete aerial scenes.
+- Selects thresholding and post-processing settings on validation data only.
+- Reports raster, boundary, component-level, and vector-quality diagnostics.
+- Exports polygons in the source raster coordinate reference system.
+
+## Selected model
+
+The selected configuration is a **U-Net with an EfficientNet-B3 encoder**,
+geometric augmentation, and Dice plus boundary-weighted binary cross-entropy:
 
 ```text
 phase2_unet_effb3_aug_boundary_bce_w2_e50
 ```
 
-It is a U-Net with an EfficientNet-B3 encoder, geometric augmentation, Dice loss plus boundary-weighted BCE, trained for 50 epochs on the INRIA public holdout protocol:
+Training uses AdamW for 50 epochs with a learning rate of `1e-4`, cosine
+annealing, seed `42`, boundary weight `2.0`, and boundary width `3 px`.
 
-| Split | Image IDs per city | Total images | Purpose |
+### Full-image segmentation
+
+These results use the default evaluation configuration: threshold `0.50`,
+minimum component area `500 px`, and morphological opening kernel `5 px`.
+
+| Split | IoU | Dice/F1 | Precision | Recall | BF1 @2 px | BF1 @5 px |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Validation | 0.8016 | 0.8899 | 0.9052 | 0.8751 | 0.6246 | 0.8023 |
+| Held-out test | 0.7876 | 0.8812 | 0.9064 | 0.8573 | 0.6307 | 0.7981 |
+
+### Vector analysis
+
+Vector diagnostics use settings chosen on validation data and then fixed:
+threshold `0.47`, minimum area `100 px`, opening kernel `3 px`, and
+Douglas–Peucker epsilon ratio `0.002`.
+
+| Split | Polygon-raster IoU | Invalid polygons | Predicted / GT area | Component mAP @50:95 |
+| --- | ---: | ---: | ---: | ---: |
+| Validation | 0.7602 | 0.60% | 1.0020 | 0.3304 |
+| Held-out test | 0.7736 | 0.54% | 0.9857 | 0.3622 |
+
+Component AP is a diagnostic derived from connected components because the
+dataset provides semantic masks rather than official instance annotations.
+
+<p align="center">
+  <img src="results/figures/postprocess_validation_metric_sensitivity.png" alt="Validation sensitivity of threshold, minimum area, and opening kernel" width="720">
+</p>
+
+<p align="center"><em>Validation sensitivity relative to the selected vector configuration; dashed lines mark the chosen values.</em></p>
+
+## Evaluation protocol
+
+Experiments use five labelled cities—Austin, Chicago, Kitsap, Tyrol-w, and
+Vienna—with complete scenes assigned to a split before tiling. This prevents
+tiles from the same source image leaking across training and evaluation.
+
+| Split | Image IDs per city | Scenes | Role |
 | --- | --- | ---: | --- |
-| Train | 11-36 | 130 | Model fitting |
-| Validation | 6-10 | 25 | Model selection and threshold/postprocess checks |
-| Test | 1-5 | 25 | Held-out reporting |
+| Train | 11–36 | 130 | Model fitting |
+| Validation | 6–10 | 25 | Model and post-processing selection |
+| Held-out test | 1–5 | 25 | Final evaluation |
 
-Overall full-image results for the selected model:
+## Installation
 
-| Split | IoU | Dice/F1 | Precision | Recall | Accuracy | Boundary F1 @2 px | Boundary F1 @5 px |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Validation | 0.8016 | 0.8899 | 0.9052 | 0.8751 | 0.9666 | 0.6246 | 0.8023 |
-| Test | 0.7876 | 0.8812 | 0.9064 | 0.8573 | 0.9681 | 0.6307 | 0.7981 |
-
-Per-city Dice/F1 for the selected model:
-
-| City | Validation | Test |
-| --- | ---: | ---: |
-| Austin | 0.8814 | 0.8992 |
-| Chicago | 0.8540 | 0.8329 |
-| Kitsap | 0.7424 | 0.8248 |
-| Tyrol-w | 0.9025 | 0.8994 |
-| Vienna | 0.9213 | 0.9084 |
-| ALL | 0.8899 | 0.8812 |
-
-## Vector Quality
-
-Basic vector-quality metrics are reported for the validation-selected
-post-processing configuration: threshold `0.47`, minimum component area `100`,
-opening kernel size `3`, and polygon simplification epsilon ratio `0.002`.
-
-| Split | Predicted polygons | GT components | Invalid polygon ratio | Mean vertices | Pred/GT area | Boundary F1 @2 raw | Boundary F1 @2 post | Polygon-raster IoU |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Validation | 21,642 | 28,420 | 0.0060 | 41.29 | 1.0020 | 0.6456 | 0.6463 | 0.7602 |
-| Test | 25,564 | 32,794 | 0.0054 | 41.40 | 0.9857 | 0.6525 | 0.6531 | 0.7736 |
-
-## Component-Level Instance AP
-
-Because the INRIA labels are semantic masks rather than official instance
-annotations, instance-style AP is computed from connected components in the GT
-and predicted masks. Predicted component confidence is the mean probability
-inside each component.
-
-| Split | GT components | Predicted components | AP50 | AP75 | mAP@50:95 | AR50 | Precision50 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Validation | 28,420 | 21,856 | 0.5602 | 0.3455 | 0.3304 | 0.6032 | 0.7843 |
-| Test | 32,794 | 25,663 | 0.6021 | 0.3826 | 0.3622 | 0.6363 | 0.8132 |
-
-## Result Files
-
-All CSV result tables are now in `results/tables/`:
-
-| File | Meaning |
-| --- | --- |
-| `phase1_noaugmentation_architecture_screening_initial.csv` | Original 10-epoch no-augmentation architecture/encoder screening. Best Dice@0.5: U-Net + EfficientNet-B3, 0.8516. |
-| `phase1_noaugmentation_architecture_screening_legacy.csv` | Preserved older copy of the Phase 1 no-augmentation table. |
-| `phase1_noaugmentation_architecture_screening_threshold_tuned.csv` | Later Phase 1 no-augmentation rerun with tuned thresholds. Best tuned Dice: FPN + EfficientNet-B3, 0.8497. |
-| `phase2_augmentation_training_metrics.csv` | Augmented 50-epoch runs comparing Dice+BCE vs boundary-weighted BCE. Best tuned validation Dice: 0.8890. |
-| `phase2_full_image_validation_metrics_by_city.csv` | Full-image validation metrics for the selected Phase 2 model by city and overall. |
-| `phase2_full_image_test_metrics_by_city.csv` | Held-out full-image test metrics for the selected Phase 2 model by city and overall. |
-| `vector_quality_validation_best_val_config_by_city.csv` | Validation-set vector-quality metrics for the selected model and validation-selected post-processing configuration. |
-| `vector_quality_test_best_val_config_by_city.csv` | Held-out test vector-quality metrics for the selected model and validation-selected post-processing configuration. |
-| `instance_ap_validation_best_val_config_by_city.csv` | Validation-set component-level AP metrics derived from connected components. |
-| `instance_ap_test_best_val_config_by_city.csv` | Held-out test component-level AP metrics derived from connected components. |
-
-Figures used in the README live in `results/figures/`. Larger generated artifacts, such as tiled prediction grids and full-image probability maps, live under `results/qualitative/` and `results/full_predictions/`; those folders are ignored by git because they are large generated outputs.
-
-## Visual Examples
-
-Example full-image inference output from the baseline U-Net + EfficientNet-B3 workflow:
-
-![Building footprint extraction example](./results/figures/building_footprint_showcase.png)
-
-Full-scene mask and polygon overlay from the same baseline run:
-
-| Clean building mask | Polygon overlay |
-| --- | --- |
-| ![Full-scene cleaned building mask](./results/figures/austin1_phase1_unet_effb3_noaugmentation_clean_mask.png) | ![Full-scene polygon overlay](./results/figures/austin1_phase1_unet_effb3_noaugmentation_polygons_overlay.jpg) |
-
-Phase 1 no-augmentation model comparison on one validation tile:
-
-![No-augmentation model comparison grid](./results/figures/phase1_noaugmentation_model_comparison.png)
-
-## Repository Structure
-
-```text
-configs/
-  default.json
-  experiments_phase1_noaug_baseline.yaml
-  experiments_phase2_augmentation_boundary_loss.yaml
-  generated/
-    phase1/
-    phase2_augmentation/
-    archive_phase3_loss_comparison/
-
-data/
-  AerialImageDataset/
-  tiles_256_inria155/
-
-docs/
-  presentation/
-
-models/
-  phase1/
-  phase2_augmentation/
-
-results/
-  tables/
-  figures/
-  full_predictions/
-  qualitative/
-
-scripts/
-  prepare_tiles.py
-  run_experiments.py
-  predict_full_image.py
-  tune_postprocess.py
-  sanity_check_boundary_metrics.py
-
-src/
-  config.py
-  dataset.py
-  train.py
-  evaluate.py
-  metrics.py
-  losses.py
-  models.py
-  gis_utils.py
-  postprocess.py
-  vectorize.py
-  transforms.py
-```
-
-The important convention is:
-
-- `data/` is the dataset and generated tiles. Do not clean or reorganize it as part of repo housekeeping.
-- `results/tables/` is the source of truth for result CSVs.
-- `results/figures/` contains small, curated figures that are useful for documentation.
-- `results/full_predictions/` and `results/qualitative/` contain large generated result artifacts and are ignored by git.
-- `docs/presentation/` contains presentation source files, deck files, build artifacts, and asset-generation scripts.
-
-## Environment Setup
-
-The recommended setup uses Conda to create a Python 3.11 environment and pip to
-install the bounded project dependencies from `requirements.txt`.
-
-Create the environment:
+The recommended environment uses Python 3.11:
 
 ```powershell
 conda env create -f environment.yml
 conda activate seg2gis
 ```
 
-Update an existing environment after dependency changes:
-
-```powershell
-conda env update -f environment.yml --prune
-conda activate seg2gis
-```
-
-For a pip-only installation, create and activate a virtual environment, then
-install the same dependency list:
+For a pip-only setup:
 
 ```powershell
 python -m venv .venv
@@ -183,9 +102,14 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## Dataset
+For CUDA acceleration, install the PyTorch build matching the local CUDA
+version before installing the remaining dependencies.
 
-The code expects the INRIA-style aerial image dataset under:
+## Data
+
+Download the
+[Inria Aerial Image Labeling Dataset](https://project.inria.fr/aerialimagelabeling/)
+and arrange it as follows:
 
 ```text
 data/AerialImageDataset/
@@ -196,82 +120,69 @@ data/AerialImageDataset/
     images/
 ```
 
-Prepared tiles are expected under:
+The dataset, prepared tiles, and trained checkpoints are intentionally not
+included in the repository.
 
-```text
-data/tiles_256_inria155/
-  train/
-    images/
-    masks/
-  val/
-    images/
-    masks/
-  test/
-    images/
-    masks/
-```
+## Run the pipeline
 
-## Reproduce The Workflow
+Run all commands from the repository root.
 
-Run commands from the repository root.
-
-Prepare tiles:
+### 1. Prepare tiles
 
 ```powershell
-conda activate seg2gis
 python scripts/prepare_tiles.py --config configs/default.json
 ```
 
-Run the Phase 1 no-augmentation screening:
+The safety checks only allow the script to replace a dedicated tile directory
+inside the repository's `data/` directory.
+
+### 2. Train models
 
 ```powershell
-conda activate seg2gis
-python scripts/run_experiments.py --experiments_config configs/experiments_phase1_noaug_baseline.yaml
+python src/train.py --config configs/default.json
 ```
 
-Run the Phase 2 augmented boundary-loss comparison:
+To run a batch of configurations, pass an experiment manifest to the experiment
+runner:
 
 ```powershell
-conda activate seg2gis
-python scripts/run_experiments.py --experiments_config configs/experiments_phase2_augmentation_boundary_loss.yaml
+python scripts/run_experiments.py --experiments_config <path-to-experiment-yaml>
 ```
 
-Evaluate the selected model on full validation images:
+The repository includes manifests for the Phase 1 architecture screen and the
+Phase 2 augmentation and boundary-loss study under `configs/`. Each manifest is
+merged with `configs/default.json`, and the resulting per-run configurations
+are written under `configs/generated/`.
+
+Checkpoint locations are determined by each configuration's `model.model_dir`
+and `training.run_name`. Checkpoints are not distributed with the repository,
+so later stages require either a locally trained checkpoint or an explicit
+`--model_path`.
+
+### 3. Evaluate a model
 
 ```powershell
-conda activate seg2gis
-python src/evaluate.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split val
+python src/evaluate.py --config <path-to-generated-config.json> --split val
+python src/evaluate.py --config <path-to-generated-config.json> --split test
 ```
 
-Evaluate the selected model on held-out full test images:
+Use validation results to select the model and post-processing settings; reserve
+the held-out test split for final evaluation after those choices are fixed.
+
+### 4. Export building polygons
 
 ```powershell
-conda activate seg2gis
-python src/evaluate.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split test
+python scripts/predict_full_image.py `
+  --config <path-to-generated-config.json> `
+  --image_path <path-to-georeferenced-raster.tif> `
+  --output_name <output-name>
 ```
 
-Generate vector-quality metrics for the validation-selected post-processing configuration:
+Threshold, morphology, simplification, output directory, and vector-area
+settings can be supplied as command-line overrides; otherwise the selected
+configuration provides their defaults.
 
-```powershell
-conda activate seg2gis
-python scripts/vector_quality_table.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split test --threshold 0.47 --min_area 100 --open_kernel_size 3
-```
-
-Generate component-level instance AP metrics for the validation-selected post-processing configuration:
-
-```powershell
-conda activate seg2gis
-python scripts/instance_ap_table.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --split test --threshold 0.47 --min_area 100 --open_kernel_size 3
-```
-
-Run full-image inference and polygon export:
-
-```powershell
-conda activate seg2gis
-python scripts/predict_full_image.py --config configs/generated/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.json --image_path data/AerialImageDataset/train/images/austin1.tif --output_name austin1_phase2_unet_effb3_aug_boundary_bce_w2_e50
-```
-
-Prediction outputs are written to `results/full_predictions/` by default:
+The default output directory is `results/full_predictions/`:
 
 ```text
 <name>_prob.npy
@@ -283,24 +194,45 @@ Prediction outputs are written to `results/full_predictions/` by default:
 <name>_buildings.geojson
 ```
 
-GeoJSON export uses the source raster transform and CRS. Area filtering expects a projected CRS. If a raster is in a geographic CRS, either reproject it first, set `--vector_min_area 0`, or pass `--allow_geographic_area` only when square-degree area filtering is intentional.
+GeoJSON export preserves the source raster transform and CRS. Area filtering
+expects a projected CRS; geographic-coordinate rasters must be reprojected,
+used with `--vector_min_area 0`, or explicitly allowed when square-degree
+filtering is intentional.
 
-## Presentation Materials
+## Repository map
 
-Presentation material is grouped under `docs/presentation/`:
+```text
+configs/          base, experiment, and generated run configurations
+scripts/          tiling, experiment orchestration, inference, and analyses
+src/              training, datasets, metrics, post-processing, vectorisation
+tests/            path-safety and generated-configuration regression tests
+results/tables/   committed numerical evidence
+results/figures/  curated qualitative and analytical figures
+```
 
-- `thesis_presentation_source.md` is the source deck text.
-- `from_aerial_segmentation_to_gis_footprints.pptx` is the current deck.
-- `assets/` contains the images used in the slides.
-- `scripts/asset_generation/` contains the scripts used to build slide assets.
-- `builds/` contains generated presentation build outputs.
+The main result tables are committed as CSV files so reported values remain
+inspectable without rerunning GPU-intensive experiments.
 
-## Current Limitations
+## Scope and limitations
 
-- The segmentation results are strong enough for thesis reporting, but the vectorized polygons still need quality analysis before being described as production-ready GIS footprints.
-- The current best full-image evaluation uses threshold `0.5`, postprocess `min_area=500`, and morphological opening kernel size `5`.
-- Heavy local artifacts are preserved in `results/`, but ignored by git to keep the repository lightweight.
+- The system is a research baseline and candidate-footprint generator, not an
+  automatic cadastral mapping system.
+- Semantic masks do not explicitly model instances, corners, topology, or
+  polygon vertices; nearby buildings can merge and small structures can be
+  missed.
+- Strict boundary quality remains substantially harder than approximate
+  overlap, as reflected by the gap between BF1 @2 px and BF1 @5 px.
+- Reported training results use one fixed seed; broader multi-seed and
+  cross-dataset evaluation would strengthen generalisation evidence.
+
+## Dataset citation
+
+The benchmark was introduced by E. Maggiori, Y. Tarabalka, G. Charpiat, and
+P. Alliez in
+[“Can Semantic Labeling Methods Generalize to Any City? The Inria Aerial Image Labeling Benchmark”](https://doi.org/10.1109/IGARSS.2017.8127684),
+IGARSS 2017.
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+Code is released under the [MIT License](LICENSE). The Inria dataset remains
+subject to its own terms.
