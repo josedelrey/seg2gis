@@ -3,7 +3,7 @@ Generate a post-processing ablation table for the final segmentation pipeline.
 
 This script is intended for validation-set ablation of thresholding, connected
 component filtering, and morphological opening. Keep `--split val` as the
-default for thesis tuning; use `--split test` only for final reporting, not for
+default for validation tuning; use `--split test` only for final reporting, not for
 choosing post-processing settings.
 """
 
