@@ -1,12 +1,13 @@
-# Version ranges are intentionally bounded for reproducibility while still
-# allowing compatible patch releases. If using CUDA, install the PyTorch wheel
-# that matches your CUDA version first, then install this file.
+# Version ranges are intentionally bounded for reproducibility while allowing
+# compatible releases. If using CUDA, install the PyTorch wheel that matches
+# your CUDA version first, then install this file.
 torch>=2.5,<2.6
 torchvision>=0.20,<0.21
 segmentation-models-pytorch>=0.5,<0.6
 albumentations>=2.0,<2.1
 opencv-python>=4.10,<5
 matplotlib>=3.9,<3.11
+Pillow>=10,<13
 numpy>=2.0,<2.5
 scikit-learn>=1.6,<1.9
 tqdm>=4.66,<5
