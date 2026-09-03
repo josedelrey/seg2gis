@@ -6,10 +6,14 @@
 
 **From aerial imagery to candidate building footprints for GIS.**
 
-seg2gis is a reproducible raster-to-vector pipeline for building segmentation,
+seg2gis is a configurable raster-to-vector pipeline for building segmentation,
 full-scene inference, mask post-processing, polygon simplification, and
-georeferenced GeoJSON export. It is intended for research and assisted mapping:
-the exported polygons are useful building candidates, not cadastral boundaries.
+georeferenced GeoJSON export. Developed for a master's thesis, it is intended
+for research and assisted mapping, not cadastral boundary extraction.
+
+The experiments below use INRIA data. To apply a trained model to other data,
+see [Use your own imagery](#use-your-own-imagery); to train and evaluate the
+reported model, see [Reproduce the INRIA experiments](#reproduce-the-inria-experiments).
 
 ![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
 
@@ -18,19 +22,19 @@ the exported polygons are useful building candidates, not cadastral boundaries.
 ## Pipeline
 
 ```text
-aerial scenes → image-level split → 256 px tiles → segmentation model
-              → overlapping full-image inference → mask cleanup
-              → contour extraction → polygon simplification → GeoJSON
+RGB aerial scene → overlapping tile inference → probability map
+                 → mask cleanup → contour extraction
+                 → polygon simplification → GeoJSON
 ```
 
-- Compares U-Net, FPN, and DeepLabV3+ segmentation models.
-- Supports geometric augmentation and boundary-weighted training.
-- Reconstructs complete scenes from overlapping tile predictions.
-- Selects thresholds and post-processing settings on validation data only.
-- Reports raster, boundary, component, and vector-quality diagnostics.
-- Preserves the source raster transform and coordinate reference system on export.
+- Training with U-Net, FPN, and DeepLabV3+, geometric augmentation, and boundary-weighted loss.
+- Configurable tiling, inference, mask cleanup, and polygon simplification.
+- Raster, boundary, component, and vector-quality diagnostics.
+- Georeferenced export using the source raster transform and coordinate reference system (CRS).
 
-## Evaluation protocol
+## INRIA experiments
+
+### Evaluation protocol
 
 Experiments use the 180 labelled images from the
 [INRIA Aerial Image Labeling Dataset](https://project.inria.fr/aerialimagelabeling/):
@@ -47,15 +51,11 @@ leaking across training and evaluation.
 The held-out set follows the labelled first-five-per-city convention often
 called INRIA(155). It is not the benchmark's unlabelled official test set.
 
-## Results
+### Segmentation results
 
-The selected model is a **U-Net with an EfficientNet-B3 encoder**, geometric
-augmentation, and Dice plus boundary-weighted binary cross-entropy. The final
-EfficientNet-B3 candidates were closely matched on validation data; the selected
-U-Net obtained the best tuned Dice/F1 (`0.8890`) and was retained as a strong
-baseline rather than as evidence that one architecture is universally superior.
-
-### Full-image segmentation
+The model selected on validation data is a **U-Net with an EfficientNet-B3
+encoder**, geometric augmentation, and Dice plus boundary-weighted binary
+cross-entropy.
 
 The fixed baseline uses threshold `0.50`, minimum component area `500 px`, and
 an opening kernel of `5 px`.
@@ -65,13 +65,10 @@ an opening kernel of `5 px`.
 | Validation | 0.8016 | 0.8899 | 0.9052 | 0.8751 | 0.6246 | 0.8023 |
 | Held-out test | 0.7876 | 0.8812 | 0.9064 | 0.8573 | 0.6307 | 0.7981 |
 
-The small validation-to-test drop indicates stable full-scene segmentation.
-Precision is higher than recall, so the model is conservative: predicted
-building area is usually correct, but some buildings or building parts are
-missed. The gap between boundary F1 at 2 and 5 pixels shows that most outlines
-are approximately correct without being precisely aligned.
+Precision exceeds recall, reflecting missed building area. Boundary F1 (BF1)
+is lower at the tighter tolerance: good area overlap does not imply precise outlines.
 
-### Vector output
+### Vector results
 
 The vector pipeline uses a separate configuration selected on validation data:
 threshold `0.47`, minimum component area `100 px`, opening kernel `3 px`, and
@@ -82,11 +79,10 @@ On the held-out scenes, the cleaned mask reaches `0.8023` IoU. After contour
 extraction and simplification, polygon-raster IoU is `0.7736`, and `0.54%` of
 the exported polygons are invalid. The pipeline produces 25,564 polygons for
 32,794 reference connected components; component AP is `0.6021` at IoU 0.50
-and `0.3826` at IoU 0.75. In practical terms, the workflow preserves building
-area well and usually emits valid candidates, but it still misses small
-buildings, merges adjacent roofs, and lacks cadastral boundary precision.
+and `0.3826` at IoU 0.75. Remaining errors include missed small buildings,
+merged adjacent roofs, and imprecise boundaries.
 
-The figures and tables above are backed by committed CSV files:
+Results are backed by committed CSV files:
 [model selection](results/tables/phase2_augmentation_training_metrics.csv),
 [full-image validation](results/tables/phase2_full_image_validation_metrics_by_city.csv),
 [full-image test](results/tables/phase2_full_image_test_metrics_by_city.csv),
@@ -96,7 +92,12 @@ and [component diagnostics](results/tables/instance_ap_test_best_val_config_by_c
 
 ## Installation
 
-The recommended environment uses Python 3.11:
+Use Python 3.11. Commands below use PowerShell and run from the repository root.
+
+Trained checkpoints are not included. Train a model using the
+[INRIA workflow](#reproduce-the-inria-experiments) or supply a compatible checkpoint.
+
+Create the environment with Conda:
 
 ```powershell
 conda env create -f environment.yml
@@ -115,7 +116,32 @@ python -m pip install -r requirements.txt
 For CUDA acceleration, install the PyTorch build matching the local CUDA
 version before installing the remaining dependencies.
 
-## Data
+## Use your own imagery
+
+Inference requires an 8-bit RGB georeferenced raster and a trained checkpoint.
+Use a config with the same model architecture and encoder as the checkpoint;
+[configs/default.json](configs/default.json) provides the configuration structure.
+
+```powershell
+python scripts/predict_full_image.py `
+  --config "path/to/model-config.json" `
+  --model_path "path/to/checkpoint.pth" `
+  --image_path "path/to/rgb-raster.tif" `
+  --output_name "prediction"
+```
+
+Inference writes probability maps, raw and cleaned masks, polygon previews,
+and GeoJSON to `results/full_predictions/` by default. Coordinates use the
+source raster transform and CRS. Vector-area filtering requires a projected
+CRS; for geographic-coordinate rasters, reproject or use `--vector_min_area 0`.
+
+The supplied settings and reported scores are specific to INRIA. For other
+regions or image resolutions, validate the model and retune post-processing;
+retraining may be needed. Inference does not require the INRIA directory layout.
+
+## Reproduce the INRIA experiments
+
+### 1. Prepare the data and tiles
 
 Download the INRIA dataset and arrange it as follows:
 
@@ -131,15 +157,11 @@ data/AerialImageDataset/
 The labelled images under `train/` supply all three local splits. The public
 `test/` images have no labels and are not used in the reported metrics.
 
-## Run the pipeline
-
-Run all commands from the repository root.
-
-### 1. Prepare tiles
-
 ```powershell
 python scripts/prepare_tiles.py --config configs/default.json
 ```
+
+This applies the scene-level split above, then extracts `256 × 256 px` tiles.
 
 ### 2. Train the selected model
 
@@ -155,14 +177,10 @@ python src/train.py `
   --config configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json
 ```
 
-Run configs are generated locally in `configs/generated/` and ignored by Git.
-The committed base config and experiment manifests are the source of truth.
-To train the complete final comparison, run the experiment command without
-`--dry_run`.
-
-Trained checkpoints are not distributed with the repository. Evaluation uses
-the checkpoint defined by `model.model_dir` and `training.run_name`; inference
-also accepts an explicit `--model_path`.
+Run configs are generated in `configs/generated/` and ignored by Git. To train
+the complete final comparison, omit `--dry_run` from the experiment command.
+Checkpoints are saved under `model.model_dir` using `training.run_name`;
+the generated config also sets the inference checkpoint path.
 
 ### 3. Evaluate full images
 
@@ -177,24 +195,19 @@ validation-selected vector settings are supplied explicitly in the next step.
 
 ### 4. Export building polygons
 
+Use the validation-selected vector settings with the trained model:
+
 ```powershell
 $CFG = "configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
 python scripts/predict_full_image.py `
   --config $CFG `
-  --image_path <path-to-georeferenced-raster.tif> `
+  --image_path "data/AerialImageDataset/train/images/austin1.tif" `
   --threshold 0.47 `
   --min_area 100 `
   --open_kernel_size 3 `
   --epsilon_ratio 0.002 `
-  --output_name <output-name>
+  --output_name "austin1"
 ```
-
-By default, inference writes the probability map, raw and cleaned masks,
-polygon overlay, showcase crop, and GeoJSON file to `results/full_predictions/`.
-
-GeoJSON coordinates use the source raster transform and CRS. Map-unit area
-filtering requires a projected CRS; for geographic-coordinate rasters, reproject
-the input or disable vector-area filtering with `--vector_min_area 0`.
 
 ## Scope and limitations
 
