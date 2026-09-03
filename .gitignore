@@ -1,6 +1,9 @@
 # Dataset and generated tiles
 data/
 
+# Generated per-run configurations
+configs/generated/
+
 # Trained weights and model artifacts
 models/
 *.pth
