@@ -8,8 +8,7 @@
 
 seg2gis is a configurable raster-to-vector pipeline for building segmentation,
 full-scene inference, mask post-processing, polygon simplification, and
-georeferenced GeoJSON export. Developed for a master's thesis, it is intended
-for research and assisted mapping, not cadastral boundary extraction.
+georeferenced GeoJSON export. It was developed for a master's thesis.
 
 The experiments below use INRIA data. To apply a trained model to other data,
 see [Use your own imagery](#use-your-own-imagery); to train and evaluate the
@@ -208,15 +207,6 @@ python scripts/predict_full_image.py `
   --epsilon_ratio 0.002 `
   --output_name "austin1"
 ```
-
-## Scope and limitations
-
-The current system is a mask-driven research baseline. It does not predict
-instances, corners, topology, or polygon vertices directly. Results cover five
-INRIA city domains and one seeded training run; component AP is derived from
-semantic-mask connected components rather than official instance annotations.
-Outputs are suitable for experimentation and assisted digitisation, but require
-review for complete inventories, legal boundaries, or high-precision mapping.
 
 ## Repository map
 
