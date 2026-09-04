@@ -115,6 +115,17 @@ python -m pip install -r requirements.txt
 For CUDA acceleration, install the PyTorch build matching the local CUDA
 version before installing the remaining dependencies.
 
+## Tests
+
+With the project environment active, run:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+The suite uses synthetic arrays and temporary files; it does not require the
+INRIA dataset or a trained checkpoint.
+
 ## Use your own imagery
 
 Inference requires an 8-bit RGB georeferenced raster and a trained checkpoint.

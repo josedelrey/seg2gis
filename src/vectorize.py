@@ -174,7 +174,7 @@ def save_vector_polygons(
     )
 
     if driver is None:
-        lower_path = out_path.lower()
+        lower_path = os.fspath(out_path).lower()
 
         if lower_path.endswith(".geojson") or lower_path.endswith(".json"):
             driver = "GeoJSON"
