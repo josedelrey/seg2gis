@@ -270,7 +270,7 @@ def count_values_above_thresholds(values, thresholds):
         )
 
     values = values.detach().float().flatten()
-    bucket_indices = torch.bucketize(values, thresholds, right=False)
+    bucket_indices = torch.bucketize(values, thresholds, right=True)
     counts_by_bucket = torch.bincount(
         bucket_indices,
         minlength=thresholds.numel() + 1,
