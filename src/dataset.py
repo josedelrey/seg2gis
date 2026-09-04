@@ -146,6 +146,6 @@ class BuildingDataset(Dataset):
         augmented = self.transform(image=img, mask=mask)
 
         img = augmented["image"]  # [3, H, W]
-        mask = augmented["mask"].unsqueeze(0) # [1, H, W]
+        mask = augmented["mask"].unsqueeze(0)  # [1, H, W]
 
         return img.float(), mask.float()

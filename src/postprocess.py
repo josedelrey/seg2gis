@@ -54,15 +54,7 @@ def postprocess_mask(
     min_area=64,
     open_kernel_size=3,
 ):
-    """
-    Basic building-mask post-processing pipeline.
-
-    Args:
-        mask: uint8 binary mask with values 0/1.
-
-    Returns:
-        cleaned uint8 mask with values 0/1.
-    """
+    """Binarize a mask, apply area filtering and opening, then filter again."""
     cleaned = (mask.astype(np.uint8) > 0).astype(np.uint8)
 
     if min_area is not None and min_area > 0:
