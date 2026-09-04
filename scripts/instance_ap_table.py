@@ -9,7 +9,6 @@ post-processed prediction masks. Report the metric as component-level AP.
 import argparse
 import csv
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -32,6 +31,11 @@ from dataset import (  # noqa: E402
     parse_inria_name,
 )
 from gis_utils import load_model, load_rgb_image, predict_full_image_tiled  # noqa: E402
+from prediction_cache import (  # noqa: E402
+    PredictionCache,
+    cache_file_for_image,
+    resolve_prediction_cache_dir,
+)
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -103,10 +107,18 @@ def parse_args():
         default=None,
         help="Output CSV path.",
     )
-    parser.add_argument(
+    cache_mode_group = parser.add_mutually_exclusive_group()
+    cache_mode_group.add_argument(
         "--no_disk_cache",
         action="store_true",
         help="Disable reading/writing cached probability maps.",
+    )
+    cache_mode_group.add_argument(
+        "--refresh_cache",
+        "--refresh-cache",
+        dest="refresh_cache",
+        action="store_true",
+        help="Regenerate and replace cached probability maps.",
     )
     return parser.parse_args()
 
@@ -125,70 +137,46 @@ def parse_float_list(value, option_name):
     return [round(float(item), 2) for item in items]
 
 
-def safe_path_part(value):
-    value = str(value).strip()
-    value = re.sub(r"[^A-Za-z0-9_.-]+", "_", value)
-    return value.strip("._") or "unnamed"
-
-
-def resolve_prediction_cache_dir(base_dir, run_name, split, tile_size, stride):
-    cache_name = (
-        f"{safe_path_part(run_name)}_{safe_path_part(split)}"
-        f"_tile{int(tile_size)}_stride{int(stride)}"
-    )
-    return REPO_ROOT / base_dir / cache_name
-
-
-def cache_file_for_image(cache_dir, image_path):
-    return cache_dir / f"{safe_path_part(Path(image_path).stem)}.npz"
-
-
-def load_cached_prediction(cache_path):
-    with np.load(cache_path) as data:
-        prob_map = data["prob_map"].astype(np.float32, copy=False)
-        target_mask = data["target_mask"].astype(bool, copy=False)
-
-    if prob_map.shape != target_mask.shape:
-        raise RuntimeError(
-            f"Cached prediction/target shape mismatch in {cache_path}: "
-            f"{prob_map.shape} vs {target_mask.shape}"
-        )
-
-    return prob_map, target_mask
-
-
-def save_cached_prediction(cache_path, image_path, mask_path, prob_map, target_mask):
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        cache_path,
-        image_path=str(image_path),
-        mask_path=str(mask_path),
-        prob_map=prob_map.astype(np.float32, copy=False),
-        target_mask=target_mask.astype(np.uint8, copy=False),
-    )
-
-
 def collect_cached_images(
     model_loader,
+    model_path,
+    architecture,
+    encoder,
     image_dir,
     mask_dir,
     image_ids,
     tile_size,
     stride,
     disk_cache_dir,
+    refresh_cache=False,
 ):
     pairs = collect_image_mask_pairs(image_dir, mask_dir, image_ids)
     cached_images = []
     model = None
     cache_hits = 0
     cache_misses = 0
+    disk_cache = None
+
+    if disk_cache_dir is not None:
+        disk_cache = PredictionCache(
+            checkpoint_path=model_path,
+            architecture=architecture,
+            encoder=encoder,
+            tile_size=tile_size,
+            stride=stride,
+            device=DEVICE,
+            refresh=refresh_cache,
+        )
 
     for image_path, mask_path in tqdm(pairs, desc="Loading prediction cache"):
         cache_path = None
-        if disk_cache_dir is not None:
+        cache_metadata = None
+        if disk_cache is not None:
             cache_path = cache_file_for_image(disk_cache_dir, image_path)
-            if cache_path.exists():
-                prob_map, target_mask = load_cached_prediction(cache_path)
+            cache_metadata = disk_cache.metadata_for(image_path, mask_path)
+            cached_prediction = disk_cache.load(cache_path, cache_metadata)
+            if cached_prediction is not None:
+                prob_map, target_mask = cached_prediction
                 cache_hits += 1
                 cached_images.append((image_path, prob_map, target_mask))
                 continue
@@ -217,11 +205,10 @@ def collect_cached_images(
                 f"{prob_map.shape} vs {target_mask.shape}"
             )
 
-        if cache_path is not None:
-            save_cached_prediction(
+        if disk_cache is not None:
+            disk_cache.save(
                 cache_path=cache_path,
-                image_path=image_path,
-                mask_path=mask_path,
+                metadata=cache_metadata,
                 prob_map=prob_map,
                 target_mask=target_mask,
             )
@@ -601,6 +588,7 @@ def main():
     disk_cache_dir = None
     if not args.no_disk_cache:
         disk_cache_dir = resolve_prediction_cache_dir(
+            repo_root=REPO_ROOT,
             base_dir=args.cache_dir,
             run_name=run_name,
             split=args.split,
@@ -622,6 +610,7 @@ def main():
     print("Score:", args.score)
     print("IoU thresholds:", ", ".join(f"{item:.2f}" for item in iou_thresholds))
     print("Prediction cache dir:", disk_cache_dir or "disabled")
+    print("Refresh prediction cache:", args.refresh_cache)
 
     def load_configured_model():
         return load_model(
@@ -633,12 +622,16 @@ def main():
 
     cached_images = collect_cached_images(
         model_loader=load_configured_model,
+        model_path=model_path,
+        architecture=architecture,
+        encoder=encoder,
         image_dir=image_dir,
         mask_dir=mask_dir,
         image_ids=image_ids,
         tile_size=tile_size,
         stride=stride,
         disk_cache_dir=disk_cache_dir,
+        refresh_cache=args.refresh_cache,
     )
 
     groups = {city: new_group() for city in INRIA_PUBLIC_CITIES}
