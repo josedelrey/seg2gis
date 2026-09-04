@@ -58,9 +58,6 @@ def mask_to_contours(mask, min_area=64):
 
 
 def simplify_contours(contours, epsilon_ratio=0.01):
-    """
-    Simplify contours using Douglas-Peucker approximation.
-    """
     simplified = []
 
     for contour in contours:
@@ -80,9 +77,6 @@ def simplify_contours(contours, epsilon_ratio=0.01):
 
 
 def draw_polygons_on_image(image_rgb, polygons, color=(255, 0, 0), thickness=2):
-    """
-    Draw polygon outlines on an RGB image.
-    """
     overlay = image_rgb.copy()
 
     cv2.drawContours(
