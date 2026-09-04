@@ -225,7 +225,7 @@ python scripts/predict_full_image.py `
 configs/          base configuration and experiment manifests
 scripts/          preparation, experiment, inference, and analysis commands
 src/              training, metrics, post-processing, and vectorisation code
-tests/            path-safety and configuration regression tests
+tests/            tests for data loading, metrics, inference, and GIS export
 results/tables/   numerical evidence committed as CSV
 results/figures/  curated qualitative and analytical figures
 ```
