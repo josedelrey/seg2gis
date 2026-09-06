@@ -11,8 +11,6 @@ simplification.
 
 ![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
 
-<p align="center"><em>Held-out aerial crop: input → probability map → cleaned mask → polygon overlay.</em></p>
-
 ## Contents
 
 - [Installation](#installation)
