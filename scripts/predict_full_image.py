@@ -540,12 +540,6 @@ def save_vector_outputs(args, polygons, output_paths):
         allow_geographic_area=args.allow_geographic_area,
     )
 
-    print(
-        "Skipped GPKG export because the GeoPandas/GDAL writer is crashing "
-        "in this environment.",
-        flush=True,
-    )
-
     return features
 
 
@@ -612,7 +606,6 @@ def print_saved_outputs(output_paths):
     print("Saved polygon overlay:     ", output_paths["polygon_overlay_png"])
     print("Saved showcase crop:       ", output_paths["showcase_crop_png"])
     print("Saved GeoJSON polygons:    ", output_paths["polygons_geojson"])
-    print("Skipped GPKG polygons:     ", output_paths["polygons_gpkg"])
     print()
     print("Done.")
 
