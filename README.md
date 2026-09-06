@@ -4,11 +4,10 @@
 ![PyTorch 2.5](https://img.shields.io/badge/PyTorch-2.5-EE4C2C?logo=pytorch&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f)
 
-**From aerial imagery to candidate building footprints for GIS.**
-
-seg2gis turns RGB aerial imagery into building masks and georeferenced GeoJSON
-polygons. Train a segmentation model, run inference on full scenes, and tune
-mask cleanup and polygon simplification for your imagery.
+seg2gis extracts building footprints from RGB aerial imagery and exports them
+as georeferenced GeoJSON polygons for use in GIS. It includes a pretrained model,
+tools for training and evaluation, and configurable mask cleanup and polygon
+simplification.
 
 ![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
 
@@ -287,5 +286,5 @@ P. Alliez in
 [“Can Semantic Labeling Methods Generalize to Any City? The Inria Aerial Image Labeling Benchmark”](https://doi.org/10.1109/IGARSS.2017.8127684),
 IGARSS 2017.
 
-Code is released under the [MIT License](LICENSE). The INRIA dataset remains
-subject to its own terms.
+The code and released model checkpoint are covered by the [MIT License](LICENSE).
+The INRIA dataset remains subject to its own terms.
