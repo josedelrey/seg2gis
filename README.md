@@ -8,7 +8,7 @@
 
 seg2gis is a configurable raster-to-vector pipeline for building segmentation,
 full-scene inference, mask post-processing, polygon simplification, and
-georeferenced GeoJSON export. It was developed for a master's thesis.
+georeferenced GeoJSON export.
 
 The experiments below use INRIA data. To apply a trained model to other data,
 see [Use your own imagery](#use-your-own-imagery); to train and evaluate the
@@ -17,6 +17,15 @@ reported model, see [Reproduce the INRIA experiments](#reproduce-the-inria-exper
 ![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
 
 <p align="center"><em>Held-out aerial crop: input → probability map → cleaned mask → polygon overlay.</em></p>
+
+## Contents
+
+- [Installation](#installation)
+- [Use your own imagery](#use-your-own-imagery)
+- [INRIA experiments](#inria-experiments)
+- [Reproduce the INRIA experiments](#reproduce-the-inria-experiments)
+- [Tests](#tests)
+- [Repository map](#repository-map)
 
 ## Pipeline
 
@@ -30,6 +39,91 @@ RGB aerial scene → overlapping tile inference → probability map
 - Configurable tiling, inference, mask cleanup, and polygon simplification.
 - Raster, boundary, component, and vector-quality diagnostics.
 - Georeferenced export using the source raster transform and coordinate reference system (CRS).
+
+## Installation
+
+Use Python 3.11. Commands below use PowerShell and run from the repository root.
+
+Trained checkpoints are not included. Train a model using the
+[INRIA workflow](#reproduce-the-inria-experiments) or supply a compatible checkpoint.
+
+Create the environment with Conda:
+
+```powershell
+conda env create -f environment.yml
+conda activate seg2gis
+```
+
+For a pip-only environment:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+For CUDA acceleration, install the PyTorch build matching the local CUDA
+version before installing the remaining dependencies.
+
+## Use your own imagery
+
+Inference requires an 8-bit RGB georeferenced raster and a trained checkpoint.
+Use a config with the same model architecture and encoder as the checkpoint;
+[configs/default.json](configs/default.json) provides the configuration structure.
+Checkpoints must contain a PyTorch model state dictionary compatible with the
+configured model. Inference automatically uses CUDA when available, otherwise CPU.
+
+```powershell
+python scripts/predict_full_image.py `
+  --config "path/to/model-config.json" `
+  --model_path "path/to/checkpoint.pth" `
+  --image_path "path/to/rgb-raster.tif" `
+  --output_name "prediction"
+```
+
+### Outputs
+
+Files are written to `results/full_predictions/` by default; use `--out_dir`
+to choose another directory. With `--output_name "prediction"`, the outputs are:
+
+| File | Contents |
+| --- | --- |
+| `prediction_prob.npy` | Numerical probability map for further analysis |
+| `prediction_prob.png` | Probability preview |
+| `prediction_mask.png` | Thresholded binary mask |
+| `prediction_clean_mask.png` | Mask after component filtering and morphological opening |
+| `prediction_polygons_overlay.png` | Simplified polygon outlines over the input image |
+| `prediction_showcase_crop.png` | Four-panel crop showing the pipeline stages |
+| `prediction_buildings.geojson` | Building polygons with area and vertex-count attributes |
+
+GeoJSON coordinates use the source raster transform and CRS; export does not
+reproject to longitude/latitude. PNG previews and the NumPy array do not carry
+georeferencing metadata. Use `--no_export_vectors` for raster-only output.
+
+### Inference settings
+
+Command-line options override the corresponding configuration values.
+The main controls in `configs/default.json` are:
+
+| Option | Default | Meaning |
+| --- | ---: | --- |
+| `--tile_size` | `256` | Inference tile width and height in pixels |
+| `--stride` | `128` | Tile step in pixels; overlapping predictions are averaged |
+| `--threshold` | `0.50` | Probability cutoff for the building mask |
+| `--min_area` | `500` | Minimum connected-component size in pixels |
+| `--open_kernel_size` | `5` | Morphological opening kernel width and height in pixels |
+| `--polygon_min_area` | `150` | Minimum contour area in square pixels before simplification |
+| `--epsilon_ratio` | `0.002` | Simplification tolerance as a fraction of contour perimeter |
+| `--vector_min_area` | `150` | Minimum exported polygon area in squared CRS units |
+
+Vector-area filtering requires a projected CRS; the area is in square metres
+only when the CRS uses metres. For geographic-coordinate rasters, reproject
+or use `--vector_min_area 0` to disable this filter.
+
+The supplied settings and reported scores are specific to INRIA. For other
+regions or image resolutions, validate the model and retune post-processing;
+retraining may be needed. Inference does not require the INRIA directory layout.
 
 ## INRIA experiments
 
@@ -89,66 +183,6 @@ Results are backed by committed CSV files:
 [vector quality](results/tables/vector_quality_test_best_val_config_summary.csv),
 and [component diagnostics](results/tables/instance_ap_test_best_val_config_by_city.csv).
 
-## Installation
-
-Use Python 3.11. Commands below use PowerShell and run from the repository root.
-
-Trained checkpoints are not included. Train a model using the
-[INRIA workflow](#reproduce-the-inria-experiments) or supply a compatible checkpoint.
-
-Create the environment with Conda:
-
-```powershell
-conda env create -f environment.yml
-conda activate seg2gis
-```
-
-For a pip-only environment:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-For CUDA acceleration, install the PyTorch build matching the local CUDA
-version before installing the remaining dependencies.
-
-## Tests
-
-With the project environment active, run:
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-The suite uses synthetic arrays and temporary files; it does not require the
-INRIA dataset or a trained checkpoint.
-
-## Use your own imagery
-
-Inference requires an 8-bit RGB georeferenced raster and a trained checkpoint.
-Use a config with the same model architecture and encoder as the checkpoint;
-[configs/default.json](configs/default.json) provides the configuration structure.
-
-```powershell
-python scripts/predict_full_image.py `
-  --config "path/to/model-config.json" `
-  --model_path "path/to/checkpoint.pth" `
-  --image_path "path/to/rgb-raster.tif" `
-  --output_name "prediction"
-```
-
-Inference writes probability maps, raw and cleaned masks, polygon previews,
-and GeoJSON to `results/full_predictions/` by default. Coordinates use the
-source raster transform and CRS. Vector-area filtering requires a projected
-CRS; for geographic-coordinate rasters, reproject or use `--vector_min_area 0`.
-
-The supplied settings and reported scores are specific to INRIA. For other
-regions or image resolutions, validate the model and retune post-processing;
-retraining may be needed. Inference does not require the INRIA directory layout.
-
 ## Reproduce the INRIA experiments
 
 ### 1. Prepare the data and tiles
@@ -205,7 +239,9 @@ validation-selected vector settings are supplied explicitly in the next step.
 
 ### 4. Export building polygons
 
-Use the validation-selected vector settings with the trained model:
+Use the validation-selected vector settings with the trained model. Disable
+the additional contour and CRS-area filters to match the polygon extraction
+used in the reported vector diagnostics:
 
 ```powershell
 $CFG = "configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
@@ -216,8 +252,21 @@ python scripts/predict_full_image.py `
   --min_area 100 `
   --open_kernel_size 3 `
   --epsilon_ratio 0.002 `
+  --polygon_min_area 0 `
+  --vector_min_area 0 `
   --output_name "austin1"
 ```
+
+## Tests
+
+With the project environment active, run:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+The suite uses synthetic arrays and temporary files; it does not require the
+INRIA dataset or a trained checkpoint.
 
 ## Repository map
 
