@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from src.metrics import (
+from seg2gis.metrics import (
     boundary_metrics,
     boundary_metrics_multi,
     confusion_from_masks,

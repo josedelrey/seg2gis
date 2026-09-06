@@ -3,7 +3,7 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from src.losses import (
+from seg2gis.losses import (
     boundary_weighted_bce_with_logits,
     build_loss_fn,
     describe_loss,

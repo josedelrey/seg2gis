@@ -12,21 +12,21 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from config import (
+from seg2gis.config import (
     DEFAULT_CONFIG_PATH,
     get_config_value,
     load_config,
     resolve_model_metadata_path,
     resolve_model_path,
 )
-from dataset import (
+from seg2gis.dataset import (
     BuildingDataset,
     describe_image_ids,
     image_id_list,
 )
-from losses import build_loss_fn, describe_loss
-from models import build_model
-from transforms import get_train_transform, get_val_transform
+from seg2gis.losses import build_loss_fn, describe_loss
+from seg2gis.models import build_model
+from seg2gis.transforms import get_train_transform, get_val_transform
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

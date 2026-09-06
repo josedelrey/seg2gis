@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.config import (
+from seg2gis.config import (
     get_config_value,
     load_config,
     resolve_model_metadata_path,

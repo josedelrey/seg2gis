@@ -8,7 +8,7 @@ import rasterio
 from rasterio.crs import CRS
 from rasterio.transform import from_origin
 
-from src.vectorize import (
+from seg2gis.vectorize import (
     mask_to_contours,
     mask_to_geodataframe,
     save_vector_polygons,

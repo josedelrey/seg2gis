@@ -6,21 +6,21 @@ import os
 import torch
 from tqdm import tqdm
 
-from config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
-from dataset import (
+from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.dataset import (
     INRIA_PUBLIC_CITIES,
     collect_image_mask_pairs,
     describe_image_ids,
     image_id_list,
     parse_inria_name,
 )
-from gis_utils import load_model, load_rgb_image, predict_full_image_tiled
-from metrics import (
+from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
+from seg2gis.metrics import (
     boundary_metrics_multi,
     confusion_from_masks,
     metrics_from_confusion,
 )
-from postprocess import postprocess_mask
+from seg2gis.postprocess import postprocess_mask
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

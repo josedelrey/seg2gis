@@ -1,14 +1,6 @@
-import sys
-from pathlib import Path
-
 import numpy as np
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_DIR = REPO_ROOT / "src"
-sys.path.insert(0, str(SRC_DIR))
-
-from metrics import boundary_metrics_multi  # noqa: E402
+from seg2gis.metrics import boundary_metrics_multi
 
 
 def make_square_mask(top, left, size, shape=(32, 32)):

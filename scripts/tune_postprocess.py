@@ -2,23 +2,16 @@ import argparse
 import csv
 import json
 import os
-import sys
-from pathlib import Path
 
 import cv2
 import numpy as np
 from tqdm import tqdm
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_DIR = REPO_ROOT / "src"
-sys.path.insert(0, str(SRC_DIR))
-
-from config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path  # noqa: E402
-from dataset import collect_image_mask_pairs, describe_image_ids, image_id_list  # noqa: E402
-from gis_utils import load_model, load_rgb_image, predict_full_image_tiled  # noqa: E402
-from metrics import confusion_from_masks, metrics_from_confusion  # noqa: E402
-from postprocess import postprocess_mask  # noqa: E402
+from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.dataset import collect_image_mask_pairs, describe_image_ids, image_id_list
+from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
+from seg2gis.metrics import confusion_from_masks, metrics_from_confusion
+from seg2gis.postprocess import postprocess_mask
 
 
 try:

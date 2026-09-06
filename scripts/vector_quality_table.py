@@ -10,7 +10,6 @@ rasterizing simplified polygons back to the image grid.
 import argparse
 import csv
 import os
-import sys
 from pathlib import Path
 
 import cv2
@@ -19,33 +18,29 @@ import torch
 from shapely.geometry import Polygon
 from tqdm import tqdm
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_DIR = REPO_ROOT / "src"
-sys.path.insert(0, str(SRC_DIR))
-
-from config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path  # noqa: E402
-from dataset import (  # noqa: E402
+from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.dataset import (
     INRIA_PUBLIC_CITIES,
     collect_image_mask_pairs,
     describe_image_ids,
     image_id_list,
     parse_inria_name,
 )
-from gis_utils import load_model, load_rgb_image, predict_full_image_tiled  # noqa: E402
-from metrics import (  # noqa: E402
+from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
+from seg2gis.metrics import (
     boundary_metrics_multi,
     confusion_from_masks,
     metrics_from_confusion,
 )
-from prediction_cache import (  # noqa: E402
+from seg2gis.prediction_cache import (
     PredictionCache,
     cache_file_for_image,
     resolve_prediction_cache_dir,
 )
-from vectorize import mask_to_contours, simplify_contours  # noqa: E402
+from seg2gis.vectorize import mask_to_contours, simplify_contours
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 CSV_HEADER = [

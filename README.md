@@ -53,8 +53,12 @@ For a pip-only environment:
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
+
+The project is installed in editable mode, so source changes take effect without
+reinstalling. Shared code is imported through `seg2gis`, for example
+`from seg2gis.config import load_config`.
 
 For CUDA acceleration, install a PyTorch 2.5 build supported by your NVIDIA
 driver before installing the remaining dependencies.
@@ -216,7 +220,7 @@ python scripts/run_experiments.py `
   --experiments_config configs/experiments_phase2_augmentation_boundary_loss.yaml `
   --dry_run
 
-python src/train.py `
+python -m seg2gis.train `
   --config configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json
 ```
 
@@ -229,8 +233,8 @@ the generated config also sets the inference checkpoint path.
 
 ```powershell
 $CFG = "configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
-python src/evaluate.py --config $CFG --split val
-python src/evaluate.py --config $CFG --split test
+python -m seg2gis.evaluate --config $CFG --split val
+python -m seg2gis.evaluate --config $CFG --split test
 ```
 
 These commands reproduce the fixed `0.50/500/5` full-image baseline. The
@@ -270,7 +274,7 @@ The suite is self-contained, using synthetic arrays and temporary files.
 ```text
 configs/          base configuration and experiment manifests
 scripts/          preparation, experiment, inference, and analysis commands
-src/              training, metrics, post-processing, and vectorisation code
+src/seg2gis/       training, metrics, post-processing, and vectorisation code
 tests/            tests for data loading, metrics, inference, and GIS export
 results/tables/   experiment results in CSV format
 results/figures/  example predictions and evaluation figures

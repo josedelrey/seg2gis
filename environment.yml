@@ -8,4 +8,4 @@ dependencies:
   - python=3.11
   - pip>=24,<27
   - pip:
-      - -r requirements.txt
+      - -e .

@@ -27,10 +27,14 @@ jobs:
       - name: Install CPU PyTorch
         run: python -m pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install -e .
       - name: Check dependency compatibility
         run: python -m pip check
       - name: Run tests
         run: python -m unittest discover -s tests -v
       - name: Check inference CLI
         run: python scripts/predict_full_image.py --help
+      - name: Check training and evaluation CLIs
+        run: |
+          python -m seg2gis.train --help
+          python -m seg2gis.evaluate --help
