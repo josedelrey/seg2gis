@@ -6,13 +6,9 @@
 
 **From aerial imagery to candidate building footprints for GIS.**
 
-seg2gis is a configurable raster-to-vector pipeline for building segmentation,
-full-scene inference, mask post-processing, polygon simplification, and
-georeferenced GeoJSON export.
-
-The experiments below use INRIA data. To apply a trained model to other data,
-see [Use your own imagery](#use-your-own-imagery); to train and evaluate the
-reported model, see [Reproduce the INRIA experiments](#reproduce-the-inria-experiments).
+seg2gis turns RGB aerial imagery into building masks and georeferenced GeoJSON
+polygons. Train a segmentation model, run inference on full scenes, and tune
+mask cleanup and polygon simplification for your imagery.
 
 ![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
 
@@ -44,9 +40,6 @@ RGB aerial scene → overlapping tile inference → probability map
 
 Use Python 3.11. Commands below use PowerShell and run from the repository root.
 
-Trained checkpoints are not included. Train a model using the
-[INRIA workflow](#reproduce-the-inria-experiments) or supply a compatible checkpoint.
-
 Create the environment with Conda:
 
 ```powershell
@@ -68,11 +61,12 @@ version before installing the remaining dependencies.
 
 ## Use your own imagery
 
-Inference requires an 8-bit RGB georeferenced raster and a trained checkpoint.
-Use a config with the same model architecture and encoder as the checkpoint;
-[configs/default.json](configs/default.json) provides the configuration structure.
-Checkpoints must contain a PyTorch model state dictionary compatible with the
-configured model. Inference automatically uses CUDA when available, otherwise CPU.
+Start with an 8-bit RGB georeferenced raster and a trained PyTorch state-dictionary
+checkpoint. Train one with the [INRIA workflow](#reproduce-the-inria-experiments)
+or supply your own. Use [configs/default.json](configs/default.json) as a starting
+point, matching the architecture and encoder to your checkpoint.
+
+Inference automatically uses CUDA when available, otherwise CPU.
 
 ```powershell
 python scripts/predict_full_image.py `
@@ -97,9 +91,9 @@ to choose another directory. With `--output_name "prediction"`, the outputs are:
 | `prediction_showcase_crop.png` | Four-panel crop showing the pipeline stages |
 | `prediction_buildings.geojson` | Building polygons with area and vertex-count attributes |
 
-GeoJSON coordinates use the source raster transform and CRS; export does not
-reproject to longitude/latitude. PNG previews and the NumPy array do not carry
-georeferencing metadata. Use `--no_export_vectors` for raster-only output.
+GeoJSON preserves the source raster's coordinate reference system (CRS).
+PNG and NumPy outputs use image pixel coordinates. Use `--no_export_vectors`
+for raster-only output.
 
 ### Inference settings
 
@@ -117,13 +111,11 @@ The main controls in `configs/default.json` are:
 | `--epsilon_ratio` | `0.002` | Simplification tolerance as a fraction of contour perimeter |
 | `--vector_min_area` | `150` | Minimum exported polygon area in squared CRS units |
 
-Vector-area filtering requires a projected CRS; the area is in square metres
-only when the CRS uses metres. For geographic-coordinate rasters, reproject
-or use `--vector_min_area 0` to disable this filter.
+Vector-area filtering uses squared units of a projected CRS, such as square
+metres. For geographic-coordinate rasters, reproject or set `--vector_min_area 0`.
 
-The supplied settings and reported scores are specific to INRIA. For other
-regions or image resolutions, validate the model and retune post-processing;
-retraining may be needed. Inference does not require the INRIA directory layout.
+The defaults are tuned for INRIA imagery. For a new region or resolution,
+evaluate a representative sample and adjust the model and post-processing settings.
 
 ## INRIA experiments
 
@@ -131,9 +123,8 @@ retraining may be needed. Inference does not require the INRIA directory layout.
 
 Experiments use the 180 labelled images from the
 [INRIA Aerial Image Labeling Dataset](https://project.inria.fr/aerialimagelabeling/):
-five cities, with 36 images of `5000 × 5000 px` per city. Complete scenes are
-assigned to a split before tiling, preventing spatially related tiles from
-leaking across training and evaluation.
+five cities, with 36 images of `5000 × 5000 px` per city. Scenes are split
+before tiling, keeping training, validation, and evaluation spatially separate.
 
 | Split | Image IDs per city | Scenes | Purpose |
 | --- | --- | ---: | --- |
@@ -141,8 +132,8 @@ leaking across training and evaluation.
 | Validation | 6–10 | 25 | Model and post-processing selection |
 | Held-out test | 1–5 | 25 | Final reporting |
 
-The held-out set follows the labelled first-five-per-city convention often
-called INRIA(155). It is not the benchmark's unlabelled official test set.
+Reported scores use a local holdout of the first five labelled scenes per city,
+following the INRIA(155) convention.
 
 ### Segmentation results
 
@@ -158,8 +149,8 @@ an opening kernel of `5 px`.
 | Validation | 0.8016 | 0.8899 | 0.9052 | 0.8751 | 0.6246 | 0.8023 |
 | Held-out test | 0.7876 | 0.8812 | 0.9064 | 0.8573 | 0.6307 | 0.7981 |
 
-Precision exceeds recall, reflecting missed building area. Boundary F1 (BF1)
-is lower at the tighter tolerance: good area overlap does not imply precise outlines.
+IoU and Dice measure area overlap; boundary F1 (BF1) measures outline alignment
+at 2-pixel and 5-pixel tolerances.
 
 ### Vector results
 
@@ -168,14 +159,17 @@ threshold `0.47`, minimum component area `100 px`, opening kernel `3 px`, and
 Douglas–Peucker epsilon ratio `0.002`. These values are fixed before evaluating
 the held-out split.
 
-On the held-out scenes, the cleaned mask reaches `0.8023` IoU. After contour
-extraction and simplification, polygon-raster IoU is `0.7736`, and `0.54%` of
-the exported polygons are invalid. The pipeline produces 25,564 polygons for
-32,794 reference connected components; component AP is `0.6021` at IoU 0.50
-and `0.3826` at IoU 0.75. Remaining errors include missed small buildings,
-merged adjacent roofs, and imprecise boundaries.
+| Held-out metric | Result |
+| --- | ---: |
+| Cleaned-mask IoU | 0.8023 |
+| Polygon-raster IoU | 0.7736 |
+| Valid polygons | 99.46% |
+| Predicted polygons | 25,564 |
+| Reference connected components | 32,794 |
+| Component AP @ IoU 0.50 | 0.6021 |
+| Component AP @ IoU 0.75 | 0.3826 |
 
-Results are backed by committed CSV files:
+Detailed results:
 [model selection](results/tables/phase2_augmentation_training_metrics.csv),
 [full-image validation](results/tables/phase2_full_image_validation_metrics_by_city.csv),
 [full-image test](results/tables/phase2_full_image_test_metrics_by_city.csv),
@@ -198,8 +192,8 @@ data/AerialImageDataset/
     images/
 ```
 
-The labelled images under `train/` supply all three local splits. The public
-`test/` images have no labels and are not used in the reported metrics.
+The labelled images under `train/` supply all three local splits. The optional
+`test/` directory holds the benchmark's unlabelled scenes for additional inference.
 
 ```powershell
 python scripts/prepare_tiles.py --config configs/default.json
@@ -209,8 +203,7 @@ This applies the scene-level split above, then extracts `256 × 256 px` tiles.
 
 ### 2. Train the selected model
 
-Generate the run configurations from the experiment manifest, without starting
-training, then train the selected run:
+Generate the experiment configurations with `--dry_run`, then train the selected model:
 
 ```powershell
 python scripts/run_experiments.py `
@@ -239,9 +232,8 @@ validation-selected vector settings are supplied explicitly in the next step.
 
 ### 4. Export building polygons
 
-Use the validation-selected vector settings with the trained model. Disable
-the additional contour and CRS-area filters to match the polygon extraction
-used in the reported vector diagnostics:
+Export a scene with the validation-selected settings. Setting both polygon
+area filters to zero matches the extraction used in the vector diagnostics:
 
 ```powershell
 $CFG = "configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
@@ -265,8 +257,7 @@ With the project environment active, run:
 python -m unittest discover -s tests -v
 ```
 
-The suite uses synthetic arrays and temporary files; it does not require the
-INRIA dataset or a trained checkpoint.
+The suite is self-contained, using synthetic arrays and temporary files.
 
 ## Repository map
 
@@ -275,8 +266,8 @@ configs/          base configuration and experiment manifests
 scripts/          preparation, experiment, inference, and analysis commands
 src/              training, metrics, post-processing, and vectorisation code
 tests/            tests for data loading, metrics, inference, and GIS export
-results/tables/   numerical evidence committed as CSV
-results/figures/  curated qualitative and analytical figures
+results/tables/   experiment results in CSV format
+results/figures/  example predictions and evaluation figures
 ```
 
 ## Citation and license
