@@ -274,7 +274,7 @@ The suite is self-contained, using synthetic arrays and temporary files.
 ```text
 configs/          base configuration and experiment manifests
 scripts/          preparation, experiment, inference, and analysis commands
-src/seg2gis/       training, metrics, post-processing, and vectorisation code
+seg2gis/           training, metrics, post-processing, and vectorisation code
 tests/            tests for data loading, metrics, inference, and GIS export
 results/tables/   experiment results in CSV format
 results/figures/  example predictions and evaluation figures
