@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from src.postprocess import (
+from seg2gis.postprocess import (
     morphological_open,
     postprocess_mask,
     remove_small_components,

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from src.prediction_cache import PredictionCache
+from seg2gis.prediction_cache import PredictionCache
 
 
 class PredictionCacheTests(unittest.TestCase):

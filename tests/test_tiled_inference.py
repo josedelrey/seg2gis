@@ -1,16 +1,9 @@
-import sys
 import unittest
-from pathlib import Path
 
 import numpy as np
 import torch
 
-
-SRC_DIR = Path(__file__).resolve().parents[1] / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
-from gis_utils import (  # noqa: E402
+from seg2gis.gis_utils import (
     pad_image_to_tile_grid,
     predict_full_image_tiled,
     threshold_probability_map,

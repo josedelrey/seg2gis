@@ -6,8 +6,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from models import build_model
-from transforms import IMAGENET_MEAN, IMAGENET_STD, get_inference_transform
+from seg2gis.models import build_model
+from seg2gis.transforms import IMAGENET_MEAN, IMAGENET_STD, get_inference_transform
 
 
 def load_model(model_path, architecture, encoder, device):

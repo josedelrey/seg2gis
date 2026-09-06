@@ -5,7 +5,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.dataset import (
+from seg2gis.dataset import (
     BuildingDataset,
     collect_image_mask_pairs,
     describe_image_ids,

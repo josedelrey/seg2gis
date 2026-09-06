@@ -194,7 +194,7 @@ def validate_experiment(exp):
 
 
 def build_command(config_path):
-    return [sys.executable, "src/train.py", "--config", config_path]
+    return [sys.executable, "-m", "seg2gis.train", "--config", config_path]
 
 
 def print_command(command):

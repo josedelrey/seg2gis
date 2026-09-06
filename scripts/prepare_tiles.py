@@ -1,7 +1,6 @@
 import argparse
 import os
 import shutil
-import sys
 from glob import glob
 from pathlib import Path
 
@@ -9,15 +8,13 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-sys.path.append(os.path.abspath("src"))
-
-from config import DEFAULT_CONFIG_PATH, get_config_value, load_config
-from dataset import (
+from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config
+from seg2gis.dataset import (
     collect_image_mask_pairs,
     describe_image_ids,
     image_id_list,
 )
-from path_safety import resolve_safe_tile_output_dir
+from seg2gis.path_safety import resolve_safe_tile_output_dir
 
 
 OFFICIAL_UNLABELED_TEST_SPLIT = "inria_official_test_unlabeled"

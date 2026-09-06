@@ -56,3 +56,8 @@ desktop.ini
 *.swp
 *.tmp
 *.bak
+
+# Python packaging outputs
+*.egg-info/
+build/
+dist/

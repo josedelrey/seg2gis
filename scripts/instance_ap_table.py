@@ -9,7 +9,6 @@ post-processed prediction masks. Report the metric as component-level AP.
 import argparse
 import csv
 import os
-import sys
 from pathlib import Path
 
 import cv2
@@ -17,27 +16,23 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC_DIR = REPO_ROOT / "src"
-sys.path.insert(0, str(SRC_DIR))
-
-from config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path  # noqa: E402
-from dataset import (  # noqa: E402
+from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.dataset import (
     INRIA_PUBLIC_CITIES,
     collect_image_mask_pairs,
     describe_image_ids,
     image_id_list,
     parse_inria_name,
 )
-from gis_utils import load_model, load_rgb_image, predict_full_image_tiled  # noqa: E402
-from prediction_cache import (  # noqa: E402
+from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
+from seg2gis.prediction_cache import (
     PredictionCache,
     cache_file_for_image,
     resolve_prediction_cache_dir,
 )
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DEFAULT_IOU_THRESHOLDS = "0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95"
 

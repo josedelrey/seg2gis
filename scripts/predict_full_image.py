@@ -1,17 +1,14 @@
 import argparse
 import json
 import os
-import sys
 
 import cv2
 import matplotlib.pyplot as plt
 import rasterio
 import torch
 
-sys.path.append(os.path.abspath("src"))
-
-from config import DEFAULT_CONFIG_PATH, get_config_value, load_config
-from gis_utils import (
+from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config
+from seg2gis.gis_utils import (
     load_model,
     load_rgb_image,
     predict_full_image_tiled,
@@ -20,7 +17,7 @@ from gis_utils import (
     save_probability_png,
     threshold_probability_map,
 )
-from postprocess import postprocess_mask
+from seg2gis.postprocess import postprocess_mask
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

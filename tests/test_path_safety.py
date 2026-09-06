@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.path_safety import resolve_safe_tile_output_dir
+from seg2gis.path_safety import resolve_safe_tile_output_dir
 
 
 class ResolveSafeTileOutputDirTests(unittest.TestCase):
