@@ -56,29 +56,29 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-For CUDA acceleration, install the PyTorch build matching the local CUDA
-version before installing the remaining dependencies.
+For CUDA acceleration, install a PyTorch 2.5 build supported by your NVIDIA
+driver before installing the remaining dependencies.
 
 ## Use your own imagery
 
-Start with an 8-bit RGB georeferenced raster and a trained PyTorch state-dictionary
-checkpoint. Train one with the [INRIA workflow](#reproduce-the-inria-experiments)
-or supply your own. Use [configs/default.json](configs/default.json) as a starting
-point, matching the architecture and encoder to your checkpoint.
-
-For the selected U-Net EfficientNet-B3 model, use
-[configs/pretrained_unet_effb3.json](configs/pretrained_unet_effb3.json).
-The pretrained checkpoint is not yet available to download.
+Start with an 8-bit RGB georeferenced raster. Download the
+[pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth)
+from release **v1.0.0** and save it, without renaming it, in
+`models/phase2_augmentation/` (create the folder if needed).
 
 Inference automatically uses CUDA when available, otherwise CPU.
 
 ```powershell
 python scripts/predict_full_image.py `
-  --config "path/to/model-config.json" `
-  --model_path "path/to/checkpoint.pth" `
+  --config configs/pretrained_unet_effb3.json `
   --image_path "path/to/rgb-raster.tif" `
   --output_name "prediction"
 ```
+
+The pretrained config uses the [validation-selected vector settings](#vector-results).
+To train your own model, follow the [INRIA workflow](#reproduce-the-inria-experiments).
+For another checkpoint, use `--model_path` and a config matching its architecture
+and encoder; [configs/default.json](configs/default.json) is a starting point.
 
 ### Outputs
 
@@ -96,6 +96,8 @@ to choose another directory. With `--output_name "prediction"`, the outputs are:
 | `prediction_buildings.geojson` | Building polygons with area and vertex-count attributes |
 
 GeoJSON preserves the source raster's coordinate reference system (CRS).
+For consumers requiring standard RFC 7946 GeoJSON, reproject the polygons to
+WGS84 longitude/latitude first.
 PNG and NumPy outputs use image pixel coordinates. Use `--no_export_vectors`
 for raster-only output.
 
