@@ -66,6 +66,10 @@ checkpoint. Train one with the [INRIA workflow](#reproduce-the-inria-experiments
 or supply your own. Use [configs/default.json](configs/default.json) as a starting
 point, matching the architecture and encoder to your checkpoint.
 
+For the selected U-Net EfficientNet-B3 model, use
+[configs/pretrained_unet_effb3.json](configs/pretrained_unet_effb3.json).
+The pretrained checkpoint is not yet available to download.
+
 Inference automatically uses CUDA when available, otherwise CPU.
 
 ```powershell
