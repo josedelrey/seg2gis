@@ -26,13 +26,13 @@ class BuildTrainingConfigTests(unittest.TestCase):
             base_config,
             {
                 "run_name": "selected_run",
-                "model_dir": "models/phase2_augmentation",
+                "model_dir": "custom_models",
             },
         )
 
         self.assertEqual(
             generated["inference"]["model_path"],
-            "models/phase2_augmentation/selected_run.pth",
+            "custom_models/selected_run.pth",
         )
         self.assertEqual(base_config, original)
 
