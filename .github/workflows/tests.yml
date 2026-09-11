@@ -1,7 +1,8 @@
-name: Tests
+name: Ubuntu tests
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -10,31 +11,30 @@ permissions:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
     env:
       MPLBACKEND: Agg
       NO_ALBUMENTATIONS_UPDATE: '1'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: '0.12.12'
           python-version: '3.11'
-          cache: pip
-      - name: Install CPU PyTorch
-        run: python -m pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
-      - name: Install dependencies
-        run: python -m pip install -e .
+          enable-cache: true
+      - name: Install locked environment
+        run: uv sync --locked --extra cpu
       - name: Check dependency compatibility
-        run: python -m pip check
+        run: uv pip check
       - name: Run tests
-        run: python -m unittest discover -s tests -v
+        run: uv run --locked --extra cpu python -m unittest discover -s tests -v
       - name: Check inference CLI
-        run: python scripts/predict_full_image.py --help
+        run: uv run --locked --extra cpu python scripts/predict_full_image.py --help
       - name: Check training and evaluation CLIs
         run: |
-          python -m seg2gis.train --help
-          python -m seg2gis.evaluate --help
+          uv run --locked --extra cpu python -m seg2gis.train --help
+          uv run --locked --extra cpu python -m seg2gis.evaluate --help

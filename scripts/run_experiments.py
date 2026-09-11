@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import yaml
 
@@ -136,8 +136,7 @@ def set_nested_value(config, key_path, value):
 
 
 def resolve_generated_model_path(model_dir, run_name):
-    normalized_model_dir = str(model_dir).replace("\\", "/")
-    return str(PurePosixPath(normalized_model_dir) / f"{run_name}.pth")
+    return str(Path(model_dir) / f"{run_name}.pth")
 
 
 def build_training_config(base_config, exp):

@@ -1,7 +1,8 @@
 # seg2gis
 
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![PyTorch 2.5](https://img.shields.io/badge/PyTorch-2.5-EE4C2C?logo=pytorch&logoColor=white)
+![PyTorch 2.13](https://img.shields.io/badge/PyTorch-2.13-EE4C2C?logo=pytorch&logoColor=white)
+![Platform: Ubuntu](https://img.shields.io/badge/platform-Ubuntu-E95420?logo=ubuntu&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f)
 
 seg2gis extracts building footprints from RGB aerial imagery and exports them
@@ -35,30 +36,31 @@ RGB aerial scene → overlapping tile inference → probability map
 
 ## Installation
 
-Use Python 3.11. Commands below use PowerShell and run from the repository root.
+This project targets Ubuntu Linux; other operating systems are outside its support
+scope. Use Python 3.11 and run the commands below from a Bash shell in the
+repository root.
 
-Create the environment with Conda:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if it is
+not already available. For CPU inference or CI, create the CPU environment:
 
-```powershell
-conda env create -f environment.yml
-conda activate seg2gis
+```bash
+uv sync --locked --extra cpu
 ```
 
-For a pip-only environment:
+For GPU training and inference, select the CUDA 12.6 environment instead:
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e .
+```bash
+uv sync --locked --extra cuda126
 ```
 
-The project is installed in editable mode, so source changes take effect without
-reinstalling. Shared code is imported through `seg2gis`, for example
-`from seg2gis.config import load_config`.
+The two accelerator extras are mutually exclusive. uv installs Python 3.11 when
+needed and keeps the project in `.venv`. The commands below select the CPU extra;
+replace `cpu` with `cuda126` when using a compatible NVIDIA driver. Running commands
+through `uv run` keeps the environment synchronized with the Linux-only lockfile.
 
-For CUDA acceleration, install a PyTorch 2.5 build supported by your NVIDIA
-driver before installing the remaining dependencies.
+The published v1.0.0 experiments were originally run with PyTorch 2.5. The
+maintained environment uses PyTorch 2.13; exact retraining results can vary with
+the PyTorch, CUDA, driver, and GPU versions.
 
 ## Use your own imagery
 
@@ -67,12 +69,19 @@ Start with an 8-bit RGB georeferenced raster. Download the
 from release **v1.0.0** and save it, without renaming it, in
 `models/phase2_augmentation/` (create the folder if needed).
 
+Verify the downloaded checkpoint:
+
+```bash
+echo "905a4d2e2f9566ba39371ee08bc51622b1dba3d285f751a49916a43ec7443100  models/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth" \
+  | sha256sum --check
+```
+
 Inference automatically uses CUDA when available, otherwise CPU.
 
-```powershell
-python scripts/predict_full_image.py `
-  --config configs/pretrained_unet_effb3.json `
-  --image_path "path/to/rgb-raster.tif" `
+```bash
+uv run --locked --extra cpu python scripts/predict_full_image.py \
+  --config configs/pretrained_unet_effb3.json \
+  --image_path "path/to/rgb-raster.tif" \
   --output_name "prediction"
 ```
 
@@ -202,8 +211,8 @@ data/AerialImageDataset/
 The labelled images under `train/` supply all three local splits. The optional
 `test/` directory holds the benchmark's unlabelled scenes for additional inference.
 
-```powershell
-python scripts/prepare_tiles.py --config configs/default.json
+```bash
+uv run --locked --extra cpu python scripts/prepare_tiles.py --config configs/default.json
 ```
 
 This applies the scene-level split above, then extracts `256 × 256 px` tiles.
@@ -212,12 +221,12 @@ This applies the scene-level split above, then extracts `256 × 256 px` tiles.
 
 Generate the experiment configurations with `--dry_run`, then train the selected model:
 
-```powershell
-python scripts/run_experiments.py `
-  --experiments_config configs/experiments_phase2_augmentation_boundary_loss.yaml `
+```bash
+uv run --locked --extra cpu python scripts/run_experiments.py \
+  --experiments_config configs/experiments_phase2_augmentation_boundary_loss.yaml \
   --dry_run
 
-python -m seg2gis.train `
+uv run --locked --extra cpu python -m seg2gis.train \
   --config configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json
 ```
 
@@ -228,10 +237,10 @@ the generated config also sets the inference checkpoint path.
 
 ### 3. Evaluate full images
 
-```powershell
-$CFG = "configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
-python -m seg2gis.evaluate --config $CFG --split val
-python -m seg2gis.evaluate --config $CFG --split test
+```bash
+CFG="configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
+uv run --locked --extra cpu python -m seg2gis.evaluate --config "$CFG" --split val
+uv run --locked --extra cpu python -m seg2gis.evaluate --config "$CFG" --split test
 ```
 
 These commands reproduce the fixed `0.50/500/5` full-image baseline. The
@@ -242,17 +251,17 @@ validation-selected vector settings are supplied explicitly in the next step.
 Export a scene with the validation-selected settings. Setting both polygon
 area filters to zero matches the extraction used in the vector diagnostics:
 
-```powershell
-$CFG = "configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
-python scripts/predict_full_image.py `
-  --config $CFG `
-  --image_path "data/AerialImageDataset/train/images/austin1.tif" `
-  --threshold 0.47 `
-  --min_area 100 `
-  --open_kernel_size 3 `
-  --epsilon_ratio 0.002 `
-  --polygon_min_area 0 `
-  --vector_min_area 0 `
+```bash
+CFG="configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
+uv run --locked --extra cpu python scripts/predict_full_image.py \
+  --config "$CFG" \
+  --image_path "data/AerialImageDataset/train/images/austin1.tif" \
+  --threshold 0.47 \
+  --min_area 100 \
+  --open_kernel_size 3 \
+  --epsilon_ratio 0.002 \
+  --polygon_min_area 0 \
+  --vector_min_area 0 \
   --output_name "austin1"
 ```
 
@@ -260,8 +269,8 @@ python scripts/predict_full_image.py `
 
 With the project environment active, run:
 
-```powershell
-python -m unittest discover -s tests -v
+```bash
+uv run --locked --extra cpu python -m unittest discover -s tests -v
 ```
 
 The suite is self-contained, using synthetic arrays and temporary files.
