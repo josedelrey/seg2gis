@@ -19,14 +19,6 @@ available, along with tools for training and evaluation.
 - [Tests](#tests)
 - [Repository map](#repository-map)
 
-## Pipeline
-
-```text
-RGB aerial scene → overlapping tile inference → probability map
-                 → mask cleanup → contour extraction
-                 → polygon simplification → GeoJSON
-```
-
 ## Installation
 
 Use Python 3.11 and run the commands below from the repository root.
