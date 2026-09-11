@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 
 import cv2
+from matplotlib import font_manager
 import numpy as np
 import torch
 from PIL import Image, ImageDraw, ImageFont
@@ -383,18 +384,11 @@ def write_csv(path, rows):
 
 
 def load_font(size, bold=False):
-    candidates = [
-        "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        if bold
-        else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
-    for candidate in candidates:
-        try:
-            return ImageFont.truetype(candidate, size=size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
+    properties = font_manager.FontProperties(
+        family="DejaVu Sans",
+        weight="bold" if bold else "normal",
+    )
+    return ImageFont.truetype(font_manager.findfont(properties), size=size)
 
 
 def draw_text_center(draw, xy, text, font, fill):

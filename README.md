@@ -56,13 +56,13 @@ uv sync --locked --extra cuda126
 
 Start with an 8-bit RGB georeferenced raster. Download the
 [pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth)
-and save it, without renaming it, in `models/phase2_augmentation/` (create the
+to `models/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth` (create the `models/`
 folder if needed).
 
 Verify the downloaded checkpoint:
 
 ```bash
-echo "905a4d2e2f9566ba39371ee08bc51622b1dba3d285f751a49916a43ec7443100  models/phase2_augmentation/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth" \
+echo "905a4d2e2f9566ba39371ee08bc51622b1dba3d285f751a49916a43ec7443100  models/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth" \
   | sha256sum --check
 ```
 
