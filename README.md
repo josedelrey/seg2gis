@@ -166,7 +166,9 @@ and [component diagnostics](results/tables/instance_ap_test_best_val_config_by_c
 
 ### 1. Prepare the data and tiles
 
-Download the INRIA dataset and arrange it as follows:
+Download the dataset from the
+[official INRIA download page](https://project.inria.fr/aerialimagelabeling/download/)
+and extract it into `data/AerialImageDataset/` with this layout:
 
 ```text
 data/AerialImageDataset/
@@ -176,9 +178,6 @@ data/AerialImageDataset/
   test/
     images/
 ```
-
-The labelled images under `train/` supply all three local splits. The optional
-`test/` directory holds the benchmark's unlabelled scenes for additional inference.
 
 ```bash
 python scripts/prepare_tiles.py --config configs/default.json
