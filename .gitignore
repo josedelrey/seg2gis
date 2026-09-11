@@ -49,10 +49,7 @@ node_modules/
 
 notes.txt
 
-# OS/editor noise
-.DS_Store
-Thumbs.db
-desktop.ini
+# Editor and temporary files
 *.swp
 *.tmp
 *.bak
