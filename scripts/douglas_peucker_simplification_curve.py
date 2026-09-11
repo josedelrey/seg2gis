@@ -1,11 +1,4 @@
-"""
-Plot how Douglas-Peucker simplification affects vector information retention.
-
-For each epsilon ratio, the script simplifies predicted building contours,
-rasterizes the simplified polygons back to the image grid, and measures how
-well they preserve the post-processed raster mask. It also reports the IoU
-against GT after simplification and the retained vertex count.
-"""
+"""Plot the effect of Douglas-Peucker simplification on predicted polygons."""
 
 import argparse
 import csv
