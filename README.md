@@ -45,7 +45,7 @@ source .venv/bin/activate
 ## Use your own imagery
 
 Start with an 8-bit RGB georeferenced raster. Download the
-[pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth)
+[pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/seg2gis.pth)
 and save it as `models/seg2gis.pth` (create the `models/` folder if needed).
 
 Inference automatically uses CUDA when available, otherwise CPU.
