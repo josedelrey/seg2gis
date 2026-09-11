@@ -36,9 +36,8 @@ RGB aerial scene → overlapping tile inference → probability map
 
 ## Installation
 
-This project targets Ubuntu Linux; other operating systems are outside its support
-scope. Use Python 3.11 and run the commands below from a Bash shell in the
-repository root.
+Use Python 3.11 and run the commands below from a Bash shell in the repository
+root.
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if it is
 not already available. For CPU inference or CI, create the CPU environment:
@@ -53,21 +52,12 @@ For GPU training and inference, select the CUDA 12.6 environment instead:
 uv sync --locked --extra cuda126
 ```
 
-The two accelerator extras are mutually exclusive. uv installs Python 3.11 when
-needed and keeps the project in `.venv`. The commands below select the CPU extra;
-replace `cpu` with `cuda126` when using a compatible NVIDIA driver. Running commands
-through `uv run` keeps the environment synchronized with the Linux-only lockfile.
-
-The published v1.0.0 experiments were originally run with PyTorch 2.5. The
-maintained environment uses PyTorch 2.13; exact retraining results can vary with
-the PyTorch, CUDA, driver, and GPU versions.
-
 ## Use your own imagery
 
 Start with an 8-bit RGB georeferenced raster. Download the
 [pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth)
-from release **v1.0.0** and save it, without renaming it, in
-`models/phase2_augmentation/` (create the folder if needed).
+and save it, without renaming it, in `models/phase2_augmentation/` (create the
+folder if needed).
 
 Verify the downloaded checkpoint:
 
