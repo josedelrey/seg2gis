@@ -2,13 +2,11 @@
 
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![PyTorch 2.13](https://img.shields.io/badge/PyTorch-2.13-EE4C2C?logo=pytorch&logoColor=white)
-![Platform: Ubuntu](https://img.shields.io/badge/platform-Ubuntu-E95420?logo=ubuntu&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f)
 
 seg2gis extracts building footprints from RGB aerial imagery and exports them
-as georeferenced GeoJSON polygons for use in GIS. It includes a pretrained model,
-tools for training and evaluation, and configurable mask cleanup and polygon
-simplification.
+as georeferenced GeoJSON polygons for use in GIS. A pretrained checkpoint is
+available, along with tools for training and evaluation.
 
 ![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
 
@@ -29,53 +27,45 @@ RGB aerial scene → overlapping tile inference → probability map
                  → polygon simplification → GeoJSON
 ```
 
-- Training with U-Net, FPN, and DeepLabV3+, geometric augmentation, and boundary-weighted loss.
-- Configurable tiling, inference, mask cleanup, and polygon simplification.
-- Raster, boundary, component, and vector-quality diagnostics.
-- Georeferenced export using the source raster transform and coordinate reference system (CRS).
-
 ## Installation
 
-Use Python 3.11 and run the commands below from a Bash shell in the repository
-root.
+Use Python 3.11 and run the commands below from the repository root.
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if it is
-not already available. For CPU inference or CI, create the CPU environment:
+not already available. Install the CPU dependencies with:
 
 ```bash
 uv sync --locked --extra cpu
 ```
 
-For GPU training and inference, select the CUDA 12.6 environment instead:
+For CUDA 12.6, use:
 
 ```bash
 uv sync --locked --extra cuda126
+```
+
+After either command, activate the environment:
+
+```bash
+source .venv/bin/activate
 ```
 
 ## Use your own imagery
 
 Start with an 8-bit RGB georeferenced raster. Download the
 [pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth)
-to `models/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth` (create the `models/`
-folder if needed).
-
-Verify the downloaded checkpoint:
-
-```bash
-echo "905a4d2e2f9566ba39371ee08bc51622b1dba3d285f751a49916a43ec7443100  models/phase2_unet_effb3_aug_boundary_bce_w2_e50.pth" \
-  | sha256sum --check
-```
+and save it as `models/seg2gis.pth` (create the `models/` folder if needed).
 
 Inference automatically uses CUDA when available, otherwise CPU.
 
 ```bash
-uv run --locked --extra cpu python scripts/predict_full_image.py \
+python scripts/predict_full_image.py \
   --config configs/pretrained_unet_effb3.json \
   --image_path "path/to/rgb-raster.tif" \
   --output_name "prediction"
 ```
 
-The pretrained config uses the [validation-selected vector settings](#vector-results).
+The pretrained config is tuned for the released checkpoint.
 To train your own model, follow the [INRIA workflow](#reproduce-the-inria-experiments).
 For another checkpoint, use `--model_path` and a config matching its architecture
 and encoder; [configs/default.json](configs/default.json) is a starting point.
@@ -103,24 +93,23 @@ for raster-only output.
 
 ### Inference settings
 
-Command-line options override the corresponding configuration values.
-The main controls in `configs/default.json` are:
+Command-line options override configuration values. The pretrained config uses:
 
-| Option | Default | Meaning |
+| Option | Value | Meaning |
 | --- | ---: | --- |
 | `--tile_size` | `256` | Inference tile width and height in pixels |
 | `--stride` | `128` | Tile step in pixels; overlapping predictions are averaged |
-| `--threshold` | `0.50` | Probability cutoff for the building mask |
-| `--min_area` | `500` | Minimum connected-component size in pixels |
-| `--open_kernel_size` | `5` | Morphological opening kernel width and height in pixels |
-| `--polygon_min_area` | `150` | Minimum contour area in square pixels before simplification |
+| `--threshold` | `0.47` | Probability cutoff for the building mask |
+| `--min_area` | `100` | Minimum connected-component size in pixels |
+| `--open_kernel_size` | `3` | Morphological opening kernel width and height in pixels |
+| `--polygon_min_area` | `0` | Minimum contour area in square pixels before simplification |
 | `--epsilon_ratio` | `0.002` | Simplification tolerance as a fraction of contour perimeter |
-| `--vector_min_area` | `150` | Minimum exported polygon area in squared CRS units |
+| `--vector_min_area` | `0` | Minimum exported polygon area in squared CRS units |
 
 Vector-area filtering uses squared units of a projected CRS, such as square
 metres. For geographic-coordinate rasters, reproject or set `--vector_min_area 0`.
 
-The defaults are tuned for INRIA imagery. For a new region or resolution,
+These values are tuned for INRIA imagery. For a new region or resolution,
 evaluate a representative sample and adjust the model and post-processing settings.
 
 ## INRIA experiments
@@ -143,9 +132,8 @@ following the INRIA(155) convention.
 
 ### Segmentation results
 
-The model selected on validation data is a **U-Net with an EfficientNet-B3
-encoder**, geometric augmentation, and Dice plus boundary-weighted binary
-cross-entropy.
+The reported model is a **U-Net with an EfficientNet-B3 encoder**, geometric
+augmentation, and Dice plus boundary-weighted binary cross-entropy.
 
 The fixed baseline uses threshold `0.50`, minimum component area `500 px`, and
 an opening kernel of `5 px`.
@@ -160,10 +148,9 @@ at 2-pixel and 5-pixel tolerances.
 
 ### Vector results
 
-The vector pipeline uses a separate configuration selected on validation data:
-threshold `0.47`, minimum component area `100 px`, opening kernel `3 px`, and
-Douglas–Peucker epsilon ratio `0.002`. These values are fixed before evaluating
-the held-out split.
+Validation tuning produced the vector-export settings: threshold `0.47`, minimum
+component area `100 px`, opening kernel `3 px`, and Douglas–Peucker epsilon ratio
+`0.002`. These values are fixed before evaluating the held-out split.
 
 | Held-out metric | Result |
 | --- | ---: |
@@ -202,26 +189,26 @@ The labelled images under `train/` supply all three local splits. The optional
 `test/` directory holds the benchmark's unlabelled scenes for additional inference.
 
 ```bash
-uv run --locked --extra cpu python scripts/prepare_tiles.py --config configs/default.json
+python scripts/prepare_tiles.py --config configs/default.json
 ```
 
 This applies the scene-level split above, then extracts `256 × 256 px` tiles.
 
-### 2. Train the selected model
+### 2. Train the model
 
-Generate the experiment configurations with `--dry_run`, then train the selected model:
+Generate the experiment configurations with `--dry_run`, then train the reported model:
 
 ```bash
-uv run --locked --extra cpu python scripts/run_experiments.py \
+python scripts/run_experiments.py \
   --experiments_config configs/experiments_phase2_augmentation_boundary_loss.yaml \
   --dry_run
 
-uv run --locked --extra cpu python -m seg2gis.train \
+python -m seg2gis.train \
   --config configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json
 ```
 
-Run configs are generated in `configs/generated/` and ignored by Git. To train
-the complete final comparison, omit `--dry_run` from the experiment command.
+Run configs are generated in `configs/generated/` and ignored by Git. To run
+all experiments, omit `--dry_run` from the experiment command.
 Checkpoints are saved under `model.model_dir` using `training.run_name`;
 the generated config also sets the inference checkpoint path.
 
@@ -229,21 +216,21 @@ the generated config also sets the inference checkpoint path.
 
 ```bash
 CFG="configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
-uv run --locked --extra cpu python -m seg2gis.evaluate --config "$CFG" --split val
-uv run --locked --extra cpu python -m seg2gis.evaluate --config "$CFG" --split test
+python -m seg2gis.evaluate --config "$CFG" --split val
+python -m seg2gis.evaluate --config "$CFG" --split test
 ```
 
-These commands reproduce the fixed `0.50/500/5` full-image baseline. The
-validation-selected vector settings are supplied explicitly in the next step.
+These commands reproduce the fixed `0.50/500/5` full-image baseline. The next
+step applies the vector-export settings.
 
 ### 4. Export building polygons
 
-Export a scene with the validation-selected settings. Setting both polygon
-area filters to zero matches the extraction used in the vector diagnostics:
+Export a scene with the vector settings. Setting both polygon area filters to
+zero matches the extraction used in the vector diagnostics:
 
 ```bash
 CFG="configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"
-uv run --locked --extra cpu python scripts/predict_full_image.py \
+python scripts/predict_full_image.py \
   --config "$CFG" \
   --image_path "data/AerialImageDataset/train/images/austin1.tif" \
   --threshold 0.47 \
@@ -260,7 +247,7 @@ uv run --locked --extra cpu python scripts/predict_full_image.py \
 With the project environment active, run:
 
 ```bash
-uv run --locked --extra cpu python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 ```
 
 The suite is self-contained, using synthetic arrays and temporary files.

@@ -1,9 +1,7 @@
-"""
-Compute component-level instance AP for full-image building predictions.
+"""Compute component-level AP for full-image building predictions.
 
-The INRIA labels are semantic masks, not official instance polygons. This script
-therefore derives pseudo-instances from connected components in the GT and
-post-processed prediction masks. Report the metric as component-level AP.
+INRIA provides semantic masks rather than instance polygons, so connected
+components are treated as instances.
 """
 
 import argparse

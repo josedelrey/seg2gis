@@ -1,11 +1,4 @@
-"""
-Generate basic vector-quality metrics for full-image building predictions.
-
-The table complements raster segmentation metrics with GIS-oriented measures:
-polygon counts, GT component counts, invalid polygon ratio, vertex counts,
-predicted-vs-GT area, boundary F1 before/after post-processing, and IoU after
-rasterizing simplified polygons back to the image grid.
-"""
+"""Measure vector quality for full-image building predictions."""
 
 import argparse
 import csv

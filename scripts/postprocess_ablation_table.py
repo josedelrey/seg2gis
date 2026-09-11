@@ -1,11 +1,4 @@
-"""
-Generate a post-processing ablation table for the final segmentation pipeline.
-
-This script is intended for validation-set ablation of thresholding, connected
-component filtering, and morphological opening. Keep `--split val` as the
-default for validation tuning; use `--split test` only for final reporting, not for
-choosing post-processing settings.
-"""
+"""Compare post-processing settings on full-image predictions."""
 
 import argparse
 import csv
@@ -182,17 +175,11 @@ def get_split_image_ids(config, split):
     )
 
 
-def get_full_image_dirs(config, split):
-    # The INRIA public holdout protocol keeps labels for image ids 1-36 under
-    # the training imagery directory; the official unlabeled test directory is
-    # not useful for metric computation.
-    image_dir = require_config_value(config, "data", "raw_train_image_dir")
-    mask_dir = require_config_value(config, "data", "raw_train_mask_dir")
-
-    if split == "test":
-        return image_dir, mask_dir
-
-    return image_dir, mask_dir
+def get_labeled_full_image_dirs(config):
+    return (
+        require_config_value(config, "data", "raw_train_image_dir"),
+        require_config_value(config, "data", "raw_train_mask_dir"),
+    )
 
 
 def cache_full_image_predictions(
@@ -564,7 +551,7 @@ def main():
     model_path = resolve_model_path(model_dir, run_name)
     protocol = require_config_value(config, "protocol", "name")
     image_ids = get_split_image_ids(config, args.split)
-    image_dir, mask_dir = get_full_image_dirs(config, args.split)
+    image_dir, mask_dir = get_labeled_full_image_dirs(config)
     tile_size = require_config_value(config, "evaluation", "tile_size")
     stride = require_config_value(config, "evaluation", "stride")
 
