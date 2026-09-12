@@ -44,7 +44,7 @@ source .venv/bin/activate
 
 ## Use your own imagery
 
-Start with an 8-bit RGB georeferenced raster. Download the
+Start with a three-band RGB georeferenced raster. Download the
 [pretrained U-Net EfficientNet-B3 checkpoint](https://github.com/josedelrey/seg2gis/releases/download/v1.0.0/seg2gis.pth)
 and save it as `models/seg2gis.pth` (create the `models/` folder if needed).
 

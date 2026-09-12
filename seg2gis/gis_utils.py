@@ -21,15 +21,37 @@ def load_model(model_path, architecture, encoder, device):
 
 
 def load_rgb_image(image_path):
-    image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
     if image is None:
         raise FileNotFoundError(f"Could not read image: {image_path}")
 
-    if image.dtype != np.uint8:
-        image = np.clip(image, 0, 255).astype(np.uint8)
+    if image.ndim != 3 or image.shape[2] not in (3, 4):
+        raise ValueError(
+            f"Expected a three- or four-channel image, got shape {image.shape}: "
+            f"{image_path}"
+        )
+
+    image = image[..., :3]
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    if image.dtype != np.uint8:
+        image = np.stack(
+            [
+                cv2.normalize(
+                    image[..., channel],
+                    None,
+                    alpha=0,
+                    beta=255,
+                    norm_type=cv2.NORM_MINMAX,
+                    dtype=cv2.CV_8U,
+                )
+                for channel in range(3)
+            ],
+            axis=-1,
+        )
+
     return image
 
 
