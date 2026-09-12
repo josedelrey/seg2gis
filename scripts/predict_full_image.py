@@ -3,11 +3,6 @@ import json
 import os
 
 import cv2
-import matplotlib
-
-matplotlib.use("Agg")
-
-import matplotlib.pyplot as plt
 import rasterio
 import torch
 
@@ -62,10 +57,6 @@ def parse_args():
 
     parser.add_argument("--out_dir", type=str, default=None)
     parser.add_argument("--output_name", type=str, default=None)
-
-    parser.add_argument("--crop_x", type=int, default=None)
-    parser.add_argument("--crop_y", type=int, default=None)
-    parser.add_argument("--crop_size", type=int, default=None)
 
     return parser.parse_args()
 
@@ -168,15 +159,6 @@ def apply_config(args, config):
         "inference",
         "output_name",
     )
-    args.crop_x = select_value(args.crop_x, config, "inference", "crop_x")
-    args.crop_y = select_value(args.crop_y, config, "inference", "crop_y")
-    args.crop_size = select_value(
-        args.crop_size,
-        config,
-        "inference",
-        "crop_size",
-        default=1024,
-    )
     args.export_vectors = select_value(
         args.export_vectors,
         config,
@@ -236,17 +218,9 @@ def build_output_paths(out_dir, output_name):
             out_dir,
             f"{output_name}_polygons_overlay.png",
         ),
-        "showcase_crop_png": os.path.join(
-            out_dir,
-            f"{output_name}_showcase_crop.png",
-        ),
         "polygons_geojson": os.path.join(
             out_dir,
             f"{output_name}_buildings.geojson",
-        ),
-        "polygons_gpkg": os.path.join(
-            out_dir,
-            f"{output_name}_buildings.gpkg",
         ),
     }
 
@@ -267,9 +241,6 @@ def print_config(args):
     print("Allow geographic vector area:", args.allow_geographic_area)
     print("Polygon epsilon ratio:", args.epsilon_ratio)
     print("Export GIS vectors:", args.export_vectors)
-    print("Crop x:", args.crop_x)
-    print("Crop y:", args.crop_y)
-    print("Crop size:", args.crop_size)
 
 
 def run_full_image_inference(args):
@@ -544,60 +515,6 @@ def save_vector_outputs(args, polygons, output_paths):
     return features
 
 
-def save_showcase_crop(
-    image_rgb,
-    prob_map,
-    clean_mask,
-    polygon_overlay_rgb,
-    output_paths,
-    crop_x,
-    crop_y,
-    crop_size,
-):
-    h, w = image_rgb.shape[:2]
-
-    if crop_size < 1:
-        raise ValueError("--crop_size must be at least 1.")
-
-    if crop_x is None:
-        crop_x = max(0, (w - crop_size) // 2)
-
-    if crop_y is None:
-        crop_y = max(0, (h - crop_size) // 2)
-
-    x1 = max(0, crop_x)
-    y1 = max(0, crop_y)
-    x2 = min(w, x1 + crop_size)
-    y2 = min(h, y1 + crop_size)
-
-    image_crop = image_rgb[y1:y2, x1:x2]
-    prob_crop = prob_map[y1:y2, x1:x2]
-    mask_crop = clean_mask[y1:y2, x1:x2]
-    overlay_crop = polygon_overlay_rgb[y1:y2, x1:x2]
-
-    fig, axes = plt.subplots(1, 4, figsize=(16, 4.5))
-
-    axes[0].imshow(image_crop)
-    axes[0].set_title("Input crop")
-    axes[0].axis("off")
-
-    axes[1].imshow(prob_crop, cmap="gray")
-    axes[1].set_title("Probability map")
-    axes[1].axis("off")
-
-    axes[2].imshow(mask_crop, cmap="gray", interpolation="nearest")
-    axes[2].set_title("Clean mask")
-    axes[2].axis("off")
-
-    axes[3].imshow(overlay_crop)
-    axes[3].set_title("Polygon overlay")
-    axes[3].axis("off")
-
-    plt.tight_layout(pad=0.6)
-    plt.savefig(output_paths["showcase_crop_png"], dpi=150)
-    plt.close()
-
-
 def print_saved_outputs(output_paths):
     print()
     print("Saved probability map:     ", output_paths["prob_npy"])
@@ -605,7 +522,6 @@ def print_saved_outputs(output_paths):
     print("Saved raw binary mask:     ", output_paths["raw_mask_png"])
     print("Saved cleaned binary mask: ", output_paths["clean_mask_png"])
     print("Saved polygon overlay:     ", output_paths["polygon_overlay_png"])
-    print("Saved showcase crop:       ", output_paths["showcase_crop_png"])
     print("Saved GeoJSON polygons:    ", output_paths["polygons_geojson"])
     print()
     print("Done.")
@@ -655,17 +571,6 @@ def main():
         args=args,
         polygons=polygons,
         output_paths=output_paths,
-    )
-
-    save_showcase_crop(
-        image_rgb=image_rgb,
-        prob_map=prob_map,
-        clean_mask=clean_mask,
-        polygon_overlay_rgb=polygon_overlay_rgb,
-        output_paths=output_paths,
-        crop_x=args.crop_x,
-        crop_y=args.crop_y,
-        crop_size=args.crop_size,
     )
 
     print_saved_outputs(output_paths)
