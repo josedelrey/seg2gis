@@ -69,12 +69,11 @@ to choose another directory. With `--output_name "prediction"`, the outputs are:
 
 | File | Contents |
 | --- | --- |
-| `prediction_prob.npy` | Numerical probability map for further analysis |
+| `prediction_prob.npy` | Probability map as a NumPy array |
 | `prediction_prob.png` | Probability preview |
 | `prediction_mask.png` | Thresholded binary mask |
 | `prediction_clean_mask.png` | Mask after component filtering and morphological opening |
 | `prediction_polygons_overlay.png` | Simplified polygon outlines over the input image |
-| `prediction_showcase_crop.png` | Four-panel crop showing the pipeline stages |
 | `prediction_buildings.geojson` | Building polygons with area and vertex-count attributes |
 
 GeoJSON preserves the source raster's coordinate reference system (CRS).
