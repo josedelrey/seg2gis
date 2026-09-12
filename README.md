@@ -97,11 +97,9 @@ Command-line options override configuration values. The pretrained config uses:
 | `--epsilon_ratio` | `0.002` | Simplification tolerance as a fraction of contour perimeter |
 | `--vector_min_area` | `0` | Minimum exported polygon area in squared CRS units |
 
-Vector-area filtering uses squared units of a projected CRS, such as square
-metres. For geographic-coordinate rasters, reproject or set `--vector_min_area 0`.
-
-These values are tuned for INRIA imagery. For a new region or resolution,
-evaluate a representative sample and adjust the model and post-processing settings.
+`--vector_min_area` is measured in the raster CRS's squared units. For rasters
+using latitude/longitude coordinates, use `--vector_min_area 0` or convert the
+raster to a suitable projected CRS first.
 
 ## INRIA experiments
 
