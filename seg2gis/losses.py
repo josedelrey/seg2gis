@@ -1,7 +1,6 @@
+import segmentation_models_pytorch as smp
 import torch
 import torch.nn.functional as F
-import segmentation_models_pytorch as smp
-
 
 SUPPORTED_LOSSES = ("dice_bce", "dice_boundary_bce")
 
@@ -102,24 +101,24 @@ def build_loss_fn(loss_config):
     bce_loss = torch.nn.BCEWithLogitsLoss()
 
     if config["name"] == "dice_bce":
+
         def loss_fn(logits, masks):
-            return (
-                config["dice_weight"] * dice_loss(logits, masks)
-                + config["bce_weight"] * bce_loss(logits, masks)
-            )
+            return config["dice_weight"] * dice_loss(logits, masks) + config[
+                "bce_weight"
+            ] * bce_loss(logits, masks)
 
         return loss_fn
 
     if config["name"] == "dice_boundary_bce":
+
         def loss_fn(logits, masks):
-            return (
-                config["dice_weight"] * dice_loss(logits, masks)
-                + config["bce_weight"] * boundary_weighted_bce_with_logits(
-                    logits=logits,
-                    masks=masks,
-                    boundary_weight=config["boundary_weight"],
-                    boundary_width=config["boundary_width"],
-                )
+            return config["dice_weight"] * dice_loss(logits, masks) + config[
+                "bce_weight"
+            ] * boundary_weighted_bce_with_logits(
+                logits=logits,
+                masks=masks,
+                boundary_weight=config["boundary_weight"],
+                boundary_width=config["boundary_width"],
             )
 
         return loss_fn

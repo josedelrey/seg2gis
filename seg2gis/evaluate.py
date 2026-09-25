@@ -1,12 +1,18 @@
 import argparse
 import csv
+import os
+
 import cv2
 import numpy as np
-import os
 import torch
 from tqdm import tqdm
 
-from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.config import (
+    DEFAULT_CONFIG_PATH,
+    get_config_value,
+    load_config,
+    resolve_model_path,
+)
 from seg2gis.dataset import (
     INRIA_PUBLIC_CITIES,
     collect_image_mask_pairs,
@@ -21,7 +27,6 @@ from seg2gis.metrics import (
     metrics_from_confusion,
 )
 from seg2gis.postprocess import postprocess_mask
-
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 RESULT_PATHS = {
@@ -153,10 +158,7 @@ def evaluate_full_images(
 ):
     pairs = collect_image_mask_pairs(image_dir, mask_dir, image_ids)
 
-    city_accumulators = {
-        city: new_metric_accumulator()
-        for city in INRIA_PUBLIC_CITIES
-    }
+    city_accumulators = {city: new_metric_accumulator() for city in INRIA_PUBLIC_CITIES}
     all_accumulator = new_metric_accumulator()
 
     model.eval()
@@ -228,7 +230,7 @@ def log_evaluation(
     file_exists = os.path.exists(log_path)
 
     if file_exists:
-        with open(log_path, "r", newline="") as f:
+        with open(log_path, newline="") as f:
             reader = csv.reader(f)
             existing_header = next(reader, None)
 
@@ -247,40 +249,42 @@ def log_evaluation(
         if not file_exists:
             writer.writerow(CSV_HEADER)
 
-        for city in list(INRIA_PUBLIC_CITIES) + ["ALL"]:
+        for city in [*INRIA_PUBLIC_CITIES, "ALL"]:
             metrics = metrics_by_city[city]
-            writer.writerow([
-                run_name,
-                architecture,
-                encoder,
-                protocol,
-                split,
-                city,
-                describe_image_ids(image_ids),
-                metrics["n_images"],
-                round(threshold, 2),
-                tile_size,
-                stride,
-                min_area,
-                open_kernel_size,
-                round(metrics["iou_building"], 4),
-                round(metrics["dice_f1"], 4),
-                round(metrics["precision"], 4),
-                round(metrics["recall"], 4),
-                round(metrics["accuracy"], 4),
-                round(metrics["boundary_f1_2px"], 4),
-                round(metrics["boundary_iou_2px"], 4),
-                round(metrics["boundary_precision_2px"], 4),
-                round(metrics["boundary_recall_2px"], 4),
-                round(metrics["boundary_f1_5px"], 4),
-                round(metrics["boundary_iou_5px"], 4),
-                round(metrics["boundary_precision_5px"], 4),
-                round(metrics["boundary_recall_5px"], 4),
-                metrics["tp"],
-                metrics["fp"],
-                metrics["fn"],
-                metrics["tn"],
-            ])
+            writer.writerow(
+                [
+                    run_name,
+                    architecture,
+                    encoder,
+                    protocol,
+                    split,
+                    city,
+                    describe_image_ids(image_ids),
+                    metrics["n_images"],
+                    round(threshold, 2),
+                    tile_size,
+                    stride,
+                    min_area,
+                    open_kernel_size,
+                    round(metrics["iou_building"], 4),
+                    round(metrics["dice_f1"], 4),
+                    round(metrics["precision"], 4),
+                    round(metrics["recall"], 4),
+                    round(metrics["accuracy"], 4),
+                    round(metrics["boundary_f1_2px"], 4),
+                    round(metrics["boundary_iou_2px"], 4),
+                    round(metrics["boundary_precision_2px"], 4),
+                    round(metrics["boundary_recall_2px"], 4),
+                    round(metrics["boundary_f1_5px"], 4),
+                    round(metrics["boundary_iou_5px"], 4),
+                    round(metrics["boundary_precision_5px"], 4),
+                    round(metrics["boundary_recall_5px"], 4),
+                    metrics["tp"],
+                    metrics["fp"],
+                    metrics["fn"],
+                    metrics["tn"],
+                ]
+            )
 
 
 def print_evaluation_summary(
@@ -306,7 +310,7 @@ def print_evaluation_summary(
         f"{'Prec':>7} {'Rec':>7} {'Acc':>7} {'BF1@2':>7} {'BF1@5':>7}"
     )
 
-    for city in list(INRIA_PUBLIC_CITIES) + ["ALL"]:
+    for city in [*INRIA_PUBLIC_CITIES, "ALL"]:
         metrics = metrics_by_city[city]
         print(
             f"{city:<10} "
@@ -333,11 +337,13 @@ def main():
     model_path = resolve_model_path(model_dir, run_name)
 
     protocol = require_config_value(config, "protocol", "name")
-    image_ids = image_id_list(require_config_value(
-        config,
-        "protocol",
-        f"{args.split}_image_ids",
-    ))
+    image_ids = image_id_list(
+        require_config_value(
+            config,
+            "protocol",
+            f"{args.split}_image_ids",
+        )
+    )
 
     image_dir = require_config_value(config, "data", "raw_train_image_dir")
     mask_dir = require_config_value(config, "data", "raw_train_mask_dir")

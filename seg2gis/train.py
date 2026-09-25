@@ -1,7 +1,7 @@
-import os
-import csv
 import argparse
+import csv
 import json
+import os
 import random
 import subprocess
 import time
@@ -27,7 +27,6 @@ from seg2gis.dataset import (
 from seg2gis.losses import build_loss_fn, describe_loss
 from seg2gis.models import build_model
 from seg2gis.transforms import get_train_transform, get_val_transform
-
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -105,7 +104,7 @@ def require_bool_config(config, *keys):
 
 
 def format_duration(seconds):
-    seconds = int(round(seconds))
+    seconds = round(seconds)
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
 
@@ -119,7 +118,7 @@ def format_duration(seconds):
 
 
 def format_eta(seconds_from_now):
-    finish_time = datetime.now() + timedelta(seconds=seconds_from_now)
+    finish_time = datetime.now().astimezone() + timedelta(seconds=seconds_from_now)
     return finish_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -142,16 +141,13 @@ def get_git_commit():
             check=True,
         )
         return result.stdout.strip()
-    except Exception:
+    except (OSError, subprocess.CalledProcessError):
         return None
 
 
 def to_json_serializable(value):
     if isinstance(value, dict):
-        return {
-            str(key): to_json_serializable(item)
-            for key, item in value.items()
-        }
+        return {str(key): to_json_serializable(item) for key, item in value.items()}
 
     if isinstance(value, (list, tuple)):
         return [to_json_serializable(item) for item in value]
@@ -250,7 +246,7 @@ def save_model_metadata(
         "checkpoint_path": checkpoint_path,
         "metadata_path": metadata_path,
         "config_path": config_path,
-        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "git_commit": get_git_commit(),
     }
 
@@ -331,16 +327,16 @@ def evaluate(model, loader, loss_fn, threshold_values=THRESHOLD_VALUES, desc="Va
 
             batch_dice_05 = (
                 2 * batch_true_positive_counts[threshold_05_index] + 1e-7
-            ) / (
-                batch_pred_counts[threshold_05_index] + masks_bool.sum() + 1e-7
-            )
+            ) / (batch_pred_counts[threshold_05_index] + masks_bool.sum() + 1e-7)
 
             val_loss += loss.item()
 
-            val_pbar.set_postfix({
-                "batch_loss": f"{loss.item():.4f}",
-                "batch_dice_05": f"{batch_dice_05.item():.4f}",
-            })
+            val_pbar.set_postfix(
+                {
+                    "batch_loss": f"{loss.item():.4f}",
+                    "batch_dice_05": f"{batch_dice_05.item():.4f}",
+                }
+            )
 
     val_loss /= len(loader)
 
@@ -350,12 +346,8 @@ def evaluate(model, loader, loss_fn, threshold_values=THRESHOLD_VALUES, desc="Va
     iou_scores = (true_positive_counts + 1e-7) / (
         pred_counts + target_count - true_positive_counts + 1e-7
     )
-    precision_scores = (true_positive_counts + 1e-7) / (
-        pred_counts + 1e-7
-    )
-    recall_scores = (true_positive_counts + 1e-7) / (
-        target_count + 1e-7
-    )
+    precision_scores = (true_positive_counts + 1e-7) / (pred_counts + 1e-7)
+    recall_scores = (true_positive_counts + 1e-7) / (target_count + 1e-7)
     accuracy_scores = (
         total_count - pred_counts - target_count + (2 * true_positive_counts)
     ) / (total_count + 1e-7)
@@ -420,7 +412,7 @@ def log_experiment(
     file_exists = os.path.exists(log_path)
 
     if file_exists:
-        with open(log_path, "r", newline="") as f:
+        with open(log_path, newline="") as f:
             reader = csv.reader(f)
             existing_header = next(reader, None)
 
@@ -438,49 +430,51 @@ def log_experiment(
         if not file_exists:
             writer.writerow(CSV_HEADER)
 
-        writer.writerow([
-            run_name,
-            architecture,
-            encoder,
-            str(augmentation).lower(),
-            loss_name,
-            protocol,
-            describe_image_ids(train_image_ids),
-            describe_image_ids(val_image_ids),
-            describe_image_ids(test_image_ids),
-            train_tiles,
-            val_tiles,
-            "",
-            "",
-            "",
-            epochs,
-            batch_size,
-            lr,
-            best_epoch,
-            round(val_metrics["loss"], 4),
-            round(val_metrics["dice_threshold_05"], 4),
-            round(val_metrics["iou_threshold_05"], 4),
-            round(val_metrics["precision_threshold_05"], 4),
-            round(val_metrics["recall_threshold_05"], 4),
-            round(val_metrics["accuracy_threshold_05"], 4),
-            round(val_metrics["best_threshold"], 2),
-            round(val_metrics["best_threshold_val_dice"], 4),
-            round(val_metrics["best_threshold_val_iou"], 4),
-            round(val_metrics["best_threshold_val_precision"], 4),
-            round(val_metrics["best_threshold_val_recall"], 4),
-            round(val_metrics["best_threshold_val_accuracy"], 4),
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-        ])
+        writer.writerow(
+            [
+                run_name,
+                architecture,
+                encoder,
+                str(augmentation).lower(),
+                loss_name,
+                protocol,
+                describe_image_ids(train_image_ids),
+                describe_image_ids(val_image_ids),
+                describe_image_ids(test_image_ids),
+                train_tiles,
+                val_tiles,
+                "",
+                "",
+                "",
+                epochs,
+                batch_size,
+                lr,
+                best_epoch,
+                round(val_metrics["loss"], 4),
+                round(val_metrics["dice_threshold_05"], 4),
+                round(val_metrics["iou_threshold_05"], 4),
+                round(val_metrics["precision_threshold_05"], 4),
+                round(val_metrics["recall_threshold_05"], 4),
+                round(val_metrics["accuracy_threshold_05"], 4),
+                round(val_metrics["best_threshold"], 2),
+                round(val_metrics["best_threshold_val_dice"], 4),
+                round(val_metrics["best_threshold_val_iou"], 4),
+                round(val_metrics["best_threshold_val_precision"], 4),
+                round(val_metrics["best_threshold_val_recall"], 4),
+                round(val_metrics["best_threshold_val_accuracy"], 4),
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]
+        )
 
 
 def main():
@@ -501,9 +495,15 @@ def main():
     train_mask_dir = require_config_value(config, "data", "train_mask_dir")
     val_image_dir = require_config_value(config, "data", "val_image_dir")
     val_mask_dir = require_config_value(config, "data", "val_mask_dir")
-    train_image_ids = image_id_list(require_config_value(config, "protocol", "train_image_ids"))
-    val_image_ids = image_id_list(require_config_value(config, "protocol", "val_image_ids"))
-    test_image_ids = image_id_list(require_config_value(config, "protocol", "test_image_ids"))
+    train_image_ids = image_id_list(
+        require_config_value(config, "protocol", "train_image_ids")
+    )
+    val_image_ids = image_id_list(
+        require_config_value(config, "protocol", "val_image_ids")
+    )
+    test_image_ids = image_id_list(
+        require_config_value(config, "protocol", "test_image_ids")
+    )
     model_dir = require_config_value(config, "model", "model_dir")
     log_path = require_config_value(config, "training", "experiment_log_path")
     loss_config = get_config_value(config, "loss", default={})
@@ -630,10 +630,12 @@ def main():
 
             train_loss += loss.item()
 
-            train_pbar.set_postfix({
-                "batch_loss": f"{loss.item():.4f}",
-                "avg_loss": f"{train_loss / (train_pbar.n + 1):.4f}",
-            })
+            train_pbar.set_postfix(
+                {
+                    "batch_loss": f"{loss.item():.4f}",
+                    "avg_loss": f"{train_loss / (train_pbar.n + 1):.4f}",
+                }
+            )
 
         train_loss /= len(train_loader)
 

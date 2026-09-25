@@ -14,7 +14,12 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.config import (
+    DEFAULT_CONFIG_PATH,
+    get_config_value,
+    load_config,
+    resolve_model_path,
+)
 from seg2gis.dataset import (
     INRIA_PUBLIC_CITIES,
     collect_image_mask_pairs,
@@ -28,7 +33,6 @@ from seg2gis.prediction_cache import (
     cache_file_for_image,
     resolve_prediction_cache_dir,
 )
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -327,11 +331,13 @@ def extract_predictions_for_image(
             overlaps.append((int(gt_label), float(intersection / union)))
         overlaps.sort(key=lambda item: item[1], reverse=True)
 
-        predictions.append({
-            "image_key": image_key,
-            "score": float(scores[pred_label]),
-            "overlaps": overlaps,
-        })
+        predictions.append(
+            {
+                "image_key": image_key,
+                "score": float(scores[pred_label]),
+                "overlaps": overlaps,
+            }
+        )
 
     return predictions, int(n_gt - 1)
 
@@ -347,7 +353,9 @@ def average_precision(recalls, precisions):
         mpre[index - 1] = max(mpre[index - 1], mpre[index])
 
     changing_points = np.where(mrec[1:] != mrec[:-1])[0]
-    ap = np.sum((mrec[changing_points + 1] - mrec[changing_points]) * mpre[changing_points + 1])
+    ap = np.sum(
+        (mrec[changing_points + 1] - mrec[changing_points]) * mpre[changing_points + 1]
+    )
     return float(ap)
 
 
@@ -448,10 +456,14 @@ def summarize_group(
     ar75 = metrics_by_threshold[0.75]["recall"]
     precision50 = metrics_by_threshold[0.50]["precision"]
     precision75 = metrics_by_threshold[0.75]["precision"]
-    map_50_95 = float(np.mean([
-        metrics_by_threshold[iou_threshold]["ap"]
-        for iou_threshold in iou_thresholds
-    ]))
+    map_50_95 = float(
+        np.mean(
+            [
+                metrics_by_threshold[iou_threshold]["ap"]
+                for iou_threshold in iou_thresholds
+            ]
+        )
+    )
     metrics50 = metrics_by_threshold[0.50]
     metrics75 = metrics_by_threshold[0.75]
 
@@ -471,7 +483,7 @@ def summarize_group(
         "open_kernel_size": int(open_kernel_size),
         "score_name": score_name,
         "n_gt_instances": int(group["n_gt"]),
-        "n_pred_instances": int(len(group["predictions"])),
+        "n_pred_instances": len(group["predictions"]),
         "ap50": round(ap50, 6),
         "ap75": round(ap75, 6),
         "map_50_95": round(map_50_95, 6),
@@ -574,7 +586,7 @@ def main():
     )
     out_csv = args.out_csv or (
         f"results/tables/instance_ap_{args.split}_"
-        f"thr{int(round(threshold * 100)):03d}_area{int(min_area):04d}_"
+        f"thr{round(threshold * 100):03d}_area{int(min_area):04d}_"
         f"open{int(open_kernel_size)}.csv"
     )
 

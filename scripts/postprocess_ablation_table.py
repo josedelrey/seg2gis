@@ -11,9 +11,18 @@ import torch
 from shapely.geometry import Polygon
 from tqdm import tqdm
 
-from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.config import (
+    DEFAULT_CONFIG_PATH,
+    get_config_value,
+    load_config,
+    resolve_model_path,
+)
 from seg2gis.dataset import collect_image_mask_pairs, describe_image_ids, image_id_list
-from seg2gis.evaluate import finalize_accumulator, new_metric_accumulator, update_accumulator
+from seg2gis.evaluate import (
+    finalize_accumulator,
+    new_metric_accumulator,
+    update_accumulator,
+)
 from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
 from seg2gis.postprocess import postprocess_mask
 from seg2gis.prediction_cache import (
@@ -22,7 +31,6 @@ from seg2gis.prediction_cache import (
     resolve_prediction_cache_dir,
 )
 from seg2gis.vectorize import mask_to_contours, simplify_contours
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -65,7 +73,7 @@ FULL_CSV_HEADER = [
     "tn",
 ]
 
-SUMMARY_CSV_HEADER = ["selection_reason", "balanced_score"] + FULL_CSV_HEADER
+SUMMARY_CSV_HEADER = ["selection_reason", "balanced_score", *FULL_CSV_HEADER]
 
 NAMED_CONFIGS = {
     (0.50, 0, 0): "raw",
@@ -165,14 +173,14 @@ def get_postprocess_name(threshold, min_area, open_kernel_size):
     if key in NAMED_CONFIGS:
         return NAMED_CONFIGS[key]
 
-    threshold_label = int(round(float(threshold) * 100))
-    return f"thr{threshold_label:03d}_area{int(min_area):04d}_open{int(open_kernel_size)}"
+    threshold_label = round(float(threshold) * 100)
+    return (
+        f"thr{threshold_label:03d}_area{int(min_area):04d}_open{int(open_kernel_size)}"
+    )
 
 
 def get_split_image_ids(config, split):
-    return image_id_list(
-        require_config_value(config, "protocol", f"{split}_image_ids")
-    )
+    return image_id_list(require_config_value(config, "protocol", f"{split}_image_ids"))
 
 
 def get_labeled_full_image_dirs(config):
@@ -226,13 +234,15 @@ def cache_full_image_predictions(
             cached_prediction = disk_cache.load(cache_path, cache_metadata)
             if cached_prediction is not None:
                 prob_map, target_mask = cached_prediction
-                cached_images.append({
-                    "image_path": image_path,
-                    "mask_path": mask_path,
-                    "prob_map": prob_map,
-                    "target_mask": target_mask,
-                    "cache_status": "hit",
-                })
+                cached_images.append(
+                    {
+                        "image_path": image_path,
+                        "mask_path": mask_path,
+                        "prob_map": prob_map,
+                        "target_mask": target_mask,
+                        "cache_status": "hit",
+                    }
+                )
                 cache_hits += 1
                 continue
 
@@ -269,13 +279,15 @@ def cache_full_image_predictions(
                 target_mask=target_mask,
             )
 
-        cached_images.append({
-            "image_path": image_path,
-            "mask_path": mask_path,
-            "prob_map": prob_map,
-            "target_mask": target_mask,
-            "cache_status": "miss",
-        })
+        cached_images.append(
+            {
+                "image_path": image_path,
+                "mask_path": mask_path,
+                "prob_map": prob_map,
+                "target_mask": target_mask,
+                "cache_status": "miss",
+            }
+        )
         cache_misses += 1
 
     if disk_cache_dir is not None:
@@ -310,7 +322,7 @@ def vector_stats_for_mask(mask, epsilon_ratio):
     total_area = 0.0
 
     for contour in polygons:
-        vertex_counts.append(int(len(contour)))
+        vertex_counts.append(len(contour))
         total_area += float(cv2.contourArea(contour))
 
         polygon = contour_to_polygon(contour)
@@ -325,9 +337,7 @@ def vector_stats_for_mask(mask, epsilon_ratio):
         median_vertices = 0.0
 
     invalid_polygon_ratio = (
-        float(invalid_polygons / n_polygons)
-        if n_polygons > 0
-        else 0.0
+        float(invalid_polygons / n_polygons) if n_polygons > 0 else 0.0
     )
 
     return {
@@ -394,19 +404,19 @@ def evaluate_combination(
         median_vertices = 0.0
 
     invalid_polygon_ratio = (
-        float(invalid_polygons / n_polygons)
-        if n_polygons > 0
-        else 0.0
+        float(invalid_polygons / n_polygons) if n_polygons > 0 else 0.0
     )
 
-    metrics.update({
-        "n_polygons": int(n_polygons),
-        "invalid_polygons": int(invalid_polygons),
-        "invalid_polygon_ratio": invalid_polygon_ratio,
-        "mean_vertices": mean_vertices,
-        "median_vertices": median_vertices,
-        "total_polygon_area_px": vector_totals["total_polygon_area_px"],
-    })
+    metrics.update(
+        {
+            "n_polygons": int(n_polygons),
+            "invalid_polygons": int(invalid_polygons),
+            "invalid_polygon_ratio": invalid_polygon_ratio,
+            "mean_vertices": mean_vertices,
+            "median_vertices": median_vertices,
+            "total_polygon_area_px": vector_totals["total_polygon_area_px"],
+        }
+    )
     return metrics
 
 

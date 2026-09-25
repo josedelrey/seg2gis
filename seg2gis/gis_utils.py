@@ -161,7 +161,7 @@ def predict_full_image_tiled(
     tiles = [(y, x) for y in y_positions for x in x_positions]
 
     for y, x in tqdm(tiles, desc="Predicting tiles"):
-        tile = padded_image[y:y + tile_size, x:x + tile_size]
+        tile = padded_image[y : y + tile_size, x : x + tile_size]
 
         prob = predict_tile(
             model=model,
@@ -170,8 +170,8 @@ def predict_full_image_tiled(
             device=device,
         )
 
-        prob_sum[y:y + tile_size, x:x + tile_size] += prob
-        count_map[y:y + tile_size, x:x + tile_size] += 1.0
+        prob_sum[y : y + tile_size, x : x + tile_size] += prob
+        count_map[y : y + tile_size, x : x + tile_size] += 1.0
 
     if np.any(count_map == 0):
         raise RuntimeError("Some pixels were not covered by tiled inference.")
