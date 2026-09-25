@@ -12,7 +12,8 @@ available, along with tools for training and evaluation.
 
 ## Contents
 
-- [Installation](#installation)
+- [Requirements](#requirements)
+- [Install](#install)
 - [Use your own imagery](#use-your-own-imagery)
 - [INRIA experiments](#inria-experiments)
 - [Reproduce the INRIA experiments](#reproduce-the-inria-experiments)
@@ -20,15 +21,14 @@ available, along with tools for training and evaluation.
 - [Repository map](#repository-map)
 - [Citation and license](#citation-and-license)
 
-## Installation
+## Requirements
 
-### Prerequisites
-
+- Linux
+- Python 3.11
 - [Git](https://git-scm.com/downloads)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- Python 3.11
 
-### Clone and install
+## Install
 
 Clone the repository and create its locked environment with the CPU
 dependencies:
@@ -46,7 +46,6 @@ For an NVIDIA GPU with CUDA 12.6 support, use the CUDA dependencies instead:
 uv sync --locked --extra cuda126
 source .venv/bin/activate
 ```
-
 
 ## Use your own imagery
 
