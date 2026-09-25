@@ -22,26 +22,31 @@ available, along with tools for training and evaluation.
 
 ## Installation
 
-Use Python 3.11 and run the commands below from the repository root.
+### Prerequisites
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if it is
-not already available. Install the CPU dependencies with:
+- [Git](https://git-scm.com/downloads)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Python 3.11
+
+### Clone and install
+
+Clone the repository and create its locked environment with the CPU
+dependencies:
 
 ```bash
+git clone https://github.com/josedelrey/seg2gis.git
+cd seg2gis
 uv sync --locked --extra cpu
+source .venv/bin/activate
 ```
 
-For CUDA 12.6, use:
+For an NVIDIA GPU with CUDA 12.6 support, use the CUDA dependencies instead:
 
 ```bash
 uv sync --locked --extra cuda126
-```
-
-After either command, activate the environment:
-
-```bash
 source .venv/bin/activate
 ```
+
 
 ## Use your own imagery
 
