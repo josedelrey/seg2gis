@@ -18,6 +18,7 @@ available, along with tools for training and evaluation.
 - [Reproduce the INRIA experiments](#reproduce-the-inria-experiments)
 - [Tests](#tests)
 - [Repository map](#repository-map)
+- [Citation and license](#citation-and-license)
 
 ## Installation
 
@@ -59,13 +60,11 @@ python scripts/predict_full_image.py \
 
 The pretrained config is tuned for the released checkpoint.
 To train your own model, follow the [INRIA workflow](#reproduce-the-inria-experiments).
-For another checkpoint, use `--model_path` and a config matching its architecture
-and encoder; [configs/default.json](configs/default.json) is a starting point.
+To use a different checkpoint, set `--model_path` and choose a config that matches its architecture and encoder. [configs/default.json](configs/default.json) is a good starting point.
 
 ### Outputs
 
-Files are written to `results/full_predictions/` by default; use `--out_dir`
-to choose another directory. With `--output_name "prediction"`, the outputs are:
+By default, files are written to `results/full_predictions/`. Use `--out_dir` to choose a different directory. With `--output_name "prediction"`, the following files are generated:
 
 | File | Contents |
 | --- | --- |
@@ -89,7 +88,7 @@ Command-line options override configuration values. The pretrained config uses:
 | Option | Value | Meaning |
 | --- | ---: | --- |
 | `--tile_size` | `256` | Inference tile width and height in pixels |
-| `--stride` | `128` | Tile step in pixels; overlapping predictions are averaged |
+| `--stride` | `128` | Tile step in pixels. Predictions from overlapping tiles are averaged. |
 | `--threshold` | `0.47` | Probability cutoff for the building mask |
 | `--min_area` | `100` | Minimum connected-component size in pixels |
 | `--open_kernel_size` | `3` | Morphological opening kernel width and height in pixels |
@@ -132,8 +131,7 @@ an opening kernel of `5 px`.
 | Validation | 0.8016 | 0.8899 | 0.9052 | 0.8751 | 0.6246 | 0.8023 |
 | Held-out test | 0.7876 | 0.8812 | 0.9064 | 0.8573 | 0.6307 | 0.7981 |
 
-IoU and Dice measure area overlap; boundary F1 (BF1) measures outline alignment
-at 2-pixel and 5-pixel tolerances.
+IoU and Dice measure area overlap. Boundary F1 (BF1) measures outline alignment at 2-pixel and 5-pixel tolerances.
 
 ### Vector results
 
@@ -197,8 +195,7 @@ python -m seg2gis.train \
 
 Run configs are generated in `configs/generated/` and ignored by Git. To run
 all experiments, omit `--dry_run` from the experiment command.
-Checkpoints are saved under `model.model_dir` using `training.run_name`;
-the generated config also sets the inference checkpoint path.
+Checkpoints are saved under `model.model_dir` using `training.run_name`. The generated config also sets the checkpoint path used for inference.
 
 ### 3. Evaluate full images
 
