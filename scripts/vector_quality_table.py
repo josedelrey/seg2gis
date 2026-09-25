@@ -11,7 +11,12 @@ import torch
 from shapely.geometry import Polygon
 from tqdm import tqdm
 
-from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.config import (
+    DEFAULT_CONFIG_PATH,
+    get_config_value,
+    load_config,
+    resolve_model_path,
+)
 from seg2gis.dataset import (
     INRIA_PUBLIC_CITIES,
     collect_image_mask_pairs,
@@ -31,7 +36,6 @@ from seg2gis.prediction_cache import (
     resolve_prediction_cache_dir,
 )
 from seg2gis.vectorize import mask_to_contours, simplify_contours
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -223,7 +227,7 @@ def remove_small_components_fast(mask, min_area):
     if min_area is None or min_area <= 0:
         return (mask > 0).astype(np.uint8)
 
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+    _, labels, stats, _ = cv2.connectedComponentsWithStats(
         (mask > 0).astype(np.uint8),
         connectivity=8,
     )
@@ -278,14 +282,14 @@ def polygon_stats(mask, epsilon_ratio):
         cv2.drawContours(rasterized, polygons, -1, color=1, thickness=-1)
 
     for contour in polygons:
-        vertex_counts.append(int(len(contour)))
+        vertex_counts.append(len(contour))
         polygon_area_px += float(cv2.contourArea(contour))
         polygon = contour_to_polygon(contour)
         if polygon is None or not polygon.is_valid:
             invalid_polygons += 1
 
     return {
-        "n_polygons": int(len(polygons)),
+        "n_polygons": len(polygons),
         "invalid_polygons": int(invalid_polygons),
         "vertex_counts": vertex_counts,
         "polygon_area_px": polygon_area_px,
@@ -530,12 +534,12 @@ def main():
     )
     out_csv = args.out_csv or (
         f"results/tables/vector_quality_{args.split}_"
-        f"thr{int(round(threshold * 100)):03d}_area{int(min_area):04d}_"
+        f"thr{round(threshold * 100):03d}_area{int(min_area):04d}_"
         f"open{int(open_kernel_size)}.csv"
     )
     summary_csv = args.summary_csv or (
         f"results/tables/vector_quality_{args.split}_"
-        f"thr{int(round(threshold * 100)):03d}_area{int(min_area):04d}_"
+        f"thr{round(threshold * 100):03d}_area{int(min_area):04d}_"
         f"open{int(open_kernel_size)}_summary.csv"
     )
 
@@ -587,10 +591,7 @@ def main():
         refresh_cache=args.refresh_cache,
     )
 
-    city_accumulators = {
-        city: new_accumulator()
-        for city in INRIA_PUBLIC_CITIES
-    }
+    city_accumulators = {city: new_accumulator() for city in INRIA_PUBLIC_CITIES}
     all_accumulator = new_accumulator()
 
     for image_path, prob_map, target_mask in tqdm(

@@ -16,7 +16,6 @@ from seg2gis.dataset import (
 )
 from seg2gis.path_safety import resolve_safe_tile_output_dir
 
-
 OFFICIAL_UNLABELED_TEST_SPLIT = "inria_official_test_unlabeled"
 
 
@@ -94,8 +93,8 @@ def tile_image_and_mask(img, mask, tile_size, stride):
 
     for y in range(0, h, stride):
         for x in range(0, w, stride):
-            img_tile = img[y:y + tile_size, x:x + tile_size]
-            mask_tile = mask[y:y + tile_size, x:x + tile_size]
+            img_tile = img[y : y + tile_size, x : x + tile_size]
+            mask_tile = mask[y : y + tile_size, x : x + tile_size]
 
             if img_tile.shape[:2] == (tile_size, tile_size):
                 tiles.append((img_tile, mask_tile, y, x))
@@ -109,7 +108,7 @@ def tile_image_only(img, tile_size, stride):
 
     for y in range(0, h, stride):
         for x in range(0, w, stride):
-            img_tile = img[y:y + tile_size, x:x + tile_size]
+            img_tile = img[y : y + tile_size, x : x + tile_size]
 
             if img_tile.shape[:2] == (tile_size, tile_size):
                 tiles.append((img_tile, y, x))
@@ -118,12 +117,10 @@ def tile_image_only(img, tile_size, stride):
 
 
 def process_labeled_split(split, pairs, out_dir, tile_size, stride):
-    split_data = {
-        split: pairs,
-    }
+    split_data = {split: pairs}
 
-    for split, split_pairs in split_data.items():
-        print(f"Processing {split} set...")
+    for split_name, split_pairs in split_data.items():
+        print(f"Processing {split_name} set...")
 
         total_tiles = 0
 
@@ -157,7 +154,7 @@ def process_labeled_split(split, pairs, out_dir, tile_size, stride):
 
             total_tiles += len(tiles)
 
-        print(f"{split} done. Saved {total_tiles} tiles.")
+        print(f"{split_name} done. Saved {total_tiles} tiles.")
 
 
 def process_inria_official_test_unlabeled(test_image_dir, out_dir, tile_size, stride):
@@ -228,24 +225,30 @@ def main():
     )
     tile_size = select_value(args.tile_size, config, "tiling", "tile_size", default=256)
     stride = select_value(args.stride, config, "tiling", "stride", default=256)
-    train_image_ids = image_id_list(select_value(
-        args.train_image_ids,
-        config,
-        "protocol",
-        "train_image_ids",
-    ))
-    val_image_ids = image_id_list(select_value(
-        args.val_image_ids,
-        config,
-        "protocol",
-        "val_image_ids",
-    ))
-    test_image_ids = image_id_list(select_value(
-        args.test_image_ids,
-        config,
-        "protocol",
-        "test_image_ids",
-    ))
+    train_image_ids = image_id_list(
+        select_value(
+            args.train_image_ids,
+            config,
+            "protocol",
+            "train_image_ids",
+        )
+    )
+    val_image_ids = image_id_list(
+        select_value(
+            args.val_image_ids,
+            config,
+            "protocol",
+            "val_image_ids",
+        )
+    )
+    test_image_ids = image_id_list(
+        select_value(
+            args.test_image_ids,
+            config,
+            "protocol",
+            "test_image_ids",
+        )
+    )
 
     protocol = require_value(protocol, "protocol.name")
     train_image_ids = require_value(train_image_ids, "protocol.train_image_ids")
@@ -253,13 +256,19 @@ def main():
     test_image_ids = require_value(test_image_ids, "protocol.test_image_ids")
 
     if image_dir is None:
-        raise ValueError("No raw training image directory provided. Set data.raw_train_image_dir or pass --image_dir.")
+        raise ValueError(
+            "No raw training image directory provided. Set data.raw_train_image_dir or pass --image_dir."
+        )
 
     if mask_dir is None:
-        raise ValueError("No raw training mask directory provided. Set data.raw_train_mask_dir or pass --mask_dir.")
+        raise ValueError(
+            "No raw training mask directory provided. Set data.raw_train_mask_dir or pass --mask_dir."
+        )
 
     if out_dir is None:
-        raise ValueError("No tile output directory provided. Set data.tile_dir or pass --out_dir.")
+        raise ValueError(
+            "No tile output directory provided. Set data.tile_dir or pass --out_dir."
+        )
 
     print("Image dir:", image_dir)
     print("Mask dir:", mask_dir)

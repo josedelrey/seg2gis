@@ -9,7 +9,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 CACHE_SCHEMA_VERSION = 1
 _FINGERPRINT_CHUNK_SIZE = 1024 * 1024
 _INFERENCE_SOURCE_FILES = ("gis_utils.py", "models.py", "transforms.py")

@@ -18,7 +18,6 @@ from seg2gis.gis_utils import (
 )
 from seg2gis.postprocess import postprocess_mask
 
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -398,7 +397,7 @@ def cv_contour_to_geojson_feature(contour, transform, min_area):
         "properties": {
             "area": float(area),
             "area_px": area_px,
-            "vertices": int(len(contour)),
+            "vertices": len(contour),
         },
         "geometry": {
             "type": "Polygon",

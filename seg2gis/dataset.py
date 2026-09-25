@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-
 INRIA_PUBLIC_CITIES = ("austin", "chicago", "kitsap", "tyrol-w", "vienna")
 _IMAGE_NAME_RE = re.compile(r"^(?P<city>.+?)(?P<image_id>\d+)$")
 
@@ -46,7 +45,7 @@ def describe_image_ids(values):
 
 def collect_image_mask_pairs(image_dir, mask_dir, image_ids, cities=None):
     image_ids = set(image_id_list(image_ids))
-    cities = set(city.lower() for city in (cities or INRIA_PUBLIC_CITIES))
+    cities = {city.lower() for city in (cities or INRIA_PUBLIC_CITIES)}
 
     images_by_stem = {
         os.path.splitext(os.path.basename(path))[0]: path
@@ -107,7 +106,7 @@ class BuildingDataset(Dataset):
         if image_stems != mask_stems:
             mismatches = [
                 (image_stem, mask_stem)
-                for image_stem, mask_stem in zip(image_stems, mask_stems)
+                for image_stem, mask_stem in zip(image_stems, mask_stems, strict=True)
                 if image_stem != mask_stem
             ]
             example_mismatches = mismatches[:5]

@@ -1,7 +1,8 @@
+import os
+
 import cv2
 import geopandas as gpd
 import numpy as np
-import os
 import rasterio
 from rasterio.features import shapes
 from shapely.geometry import shape
@@ -170,7 +171,7 @@ def save_vector_polygons(
     if driver is None:
         lower_path = os.fspath(out_path).lower()
 
-        if lower_path.endswith(".geojson") or lower_path.endswith(".json"):
+        if lower_path.endswith((".geojson", ".json")):
             driver = "GeoJSON"
         elif lower_path.endswith(".gpkg"):
             driver = "GPKG"

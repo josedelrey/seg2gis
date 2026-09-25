@@ -6,13 +6,18 @@ import os
 from pathlib import Path
 
 import cv2
-from matplotlib import font_manager
 import numpy as np
 import torch
+from matplotlib import font_manager
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.config import (
+    DEFAULT_CONFIG_PATH,
+    get_config_value,
+    load_config,
+    resolve_model_path,
+)
 from seg2gis.dataset import collect_image_mask_pairs, describe_image_ids, image_id_list
 from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
 from seg2gis.metrics import confusion_from_masks, metrics_from_confusion
@@ -22,7 +27,6 @@ from seg2gis.prediction_cache import (
     resolve_prediction_cache_dir,
 )
 from seg2gis.vectorize import mask_to_contours, simplify_contours
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -221,7 +225,7 @@ def remove_small_components_fast(mask, min_area):
     if min_area is None or min_area <= 0:
         return (mask > 0).astype(np.uint8)
 
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+    _, labels, stats, _ = cv2.connectedComponentsWithStats(
         (mask > 0).astype(np.uint8),
         connectivity=8,
     )
@@ -252,7 +256,7 @@ def rasterize_contours(contours, shape):
 
 
 def vertex_counts(contours):
-    return [int(len(contour)) for contour in contours]
+    return [len(contour) for contour in contours]
 
 
 def summarize_vertices(counts):
@@ -274,8 +278,7 @@ def compute_curve_rows(
 ):
     rows = []
     original_total_vertices = sum(
-        record["original_total_vertices"]
-        for record in image_records
+        record["original_total_vertices"] for record in image_records
     )
     post_area = sum(record["post_area"] for record in image_records)
 
@@ -333,34 +336,36 @@ def compute_curve_rows(
             all_vertex_counts,
         )
 
-        rows.append({
-            "run_name": run_name,
-            "split": split,
-            "image_ids": describe_image_ids(image_ids),
-            "n_images": len(image_records),
-            "threshold": round(float(threshold), 2),
-            "min_area": int(min_area),
-            "open_kernel_size": int(open_kernel_size),
-            "epsilon_ratio": round(float(epsilon_ratio), 6),
-            "mask_preservation_iou": round(preserve_metrics["iou_building"], 6),
-            "mask_preservation_dice": round(preserve_metrics["dice_f1"], 6),
-            "mask_preservation_precision": round(preserve_metrics["precision"], 6),
-            "mask_preservation_recall": round(preserve_metrics["recall"], 6),
-            "gt_iou_after_simplification": round(gt_metrics["iou_building"], 6),
-            "gt_dice_after_simplification": round(gt_metrics["dice_f1"], 6),
-            "gt_precision_after_simplification": round(gt_metrics["precision"], 6),
-            "gt_recall_after_simplification": round(gt_metrics["recall"], 6),
-            "retained_area_ratio": round(retained_area / post_area, 6),
-            "n_polygons": int(total_polygons),
-            "mean_vertices_per_polygon": round(mean_vertices, 6),
-            "median_vertices_per_polygon": round(median_vertices, 6),
-            "total_vertices": int(total_vertices),
-            "original_total_vertices": int(original_total_vertices),
-            "vertex_retention_ratio": round(
-                total_vertices / original_total_vertices,
-                6,
-            ),
-        })
+        rows.append(
+            {
+                "run_name": run_name,
+                "split": split,
+                "image_ids": describe_image_ids(image_ids),
+                "n_images": len(image_records),
+                "threshold": round(float(threshold), 2),
+                "min_area": int(min_area),
+                "open_kernel_size": int(open_kernel_size),
+                "epsilon_ratio": round(float(epsilon_ratio), 6),
+                "mask_preservation_iou": round(preserve_metrics["iou_building"], 6),
+                "mask_preservation_dice": round(preserve_metrics["dice_f1"], 6),
+                "mask_preservation_precision": round(preserve_metrics["precision"], 6),
+                "mask_preservation_recall": round(preserve_metrics["recall"], 6),
+                "gt_iou_after_simplification": round(gt_metrics["iou_building"], 6),
+                "gt_dice_after_simplification": round(gt_metrics["dice_f1"], 6),
+                "gt_precision_after_simplification": round(gt_metrics["precision"], 6),
+                "gt_recall_after_simplification": round(gt_metrics["recall"], 6),
+                "retained_area_ratio": round(retained_area / post_area, 6),
+                "n_polygons": int(total_polygons),
+                "mean_vertices_per_polygon": round(mean_vertices, 6),
+                "median_vertices_per_polygon": round(median_vertices, 6),
+                "total_vertices": int(total_vertices),
+                "original_total_vertices": int(original_total_vertices),
+                "vertex_retention_ratio": round(
+                    total_vertices / original_total_vertices,
+                    6,
+                ),
+            }
+        )
 
     return rows
 
@@ -443,7 +448,7 @@ def plot_curve(rows, out_png=None, out_pdf=None):
     draw = ImageDraw.Draw(image)
 
     def s(value):
-        return int(round(value * scale))
+        return round(value * scale)
 
     def sp(point):
         x, y = point
@@ -543,42 +548,57 @@ def plot_curve(rows, out_png=None, out_pdf=None):
 
     right_ticks = list(np.linspace(0, mean_axis_max, 5))
     draw_text(
-        (bottom[2] - text_width("Mean vertices per polygon", label_font), bottom[1] - 56),
+        (
+            bottom[2] - text_width("Mean vertices per polygon", label_font),
+            bottom[1] - 56,
+        ),
         "Mean vertices per polygon",
         label_font,
         dark,
     )
     for tick in right_ticks:
         y = y_to_px(tick, bottom, 0.0, mean_axis_max)
-        draw.line((s(bottom[2]), s(y), s(bottom[2] + 10), s(y)), fill=axis, width=sw(1.5))
+        draw.line(
+            (s(bottom[2]), s(y), s(bottom[2] + 10), s(y)), fill=axis, width=sw(1.5)
+        )
         draw_text((bottom[2] + 18, y - 19), f"{tick:.0f}", tick_font, dark)
 
     for eps in plot_eps:
         x = x_to_px(eps)
-        draw.line((s(x), s(top[1]), s(x), s(top[3])), fill=(238, 238, 238, 255), width=sw(0.7))
-        draw.line((s(x), s(bottom[1]), s(x), s(bottom[3])), fill=(238, 238, 238, 255), width=sw(0.7))
+        draw.line(
+            (s(x), s(top[1]), s(x), s(top[3])), fill=(238, 238, 238, 255), width=sw(0.7)
+        )
+        draw.line(
+            (s(x), s(bottom[1]), s(x), s(bottom[3])),
+            fill=(238, 238, 238, 255),
+            width=sw(0.7),
+        )
 
     selected_x = x_to_px(0.002)
     dash_y = top[1]
     while dash_y < bottom[3]:
-        draw.line((s(selected_x), s(dash_y), s(selected_x), s(dash_y + 16)), fill=dark, width=sw(1.5))
+        draw.line(
+            (s(selected_x), s(dash_y), s(selected_x), s(dash_y + 16)),
+            fill=dark,
+            width=sw(1.5),
+        )
         dash_y += 34
 
     top_preservation = [
         sp((x_to_px(x), y_to_px(y, top, top_min, top_max)))
-        for x, y in zip(plot_eps, preservation_iou)
+        for x, y in zip(plot_eps, preservation_iou, strict=True)
     ]
     top_gt = [
         sp((x_to_px(x), y_to_px(y, top, top_min, top_max)))
-        for x, y in zip(plot_eps, gt_iou)
+        for x, y in zip(plot_eps, gt_iou, strict=True)
     ]
     bottom_retention = [
         sp((x_to_px(x), y_to_px(y, bottom, 0.0, 1.0)))
-        for x, y in zip(plot_eps, vertex_retention)
+        for x, y in zip(plot_eps, vertex_retention, strict=True)
     ]
     bottom_mean_vertices = [
         sp((x_to_px(x), y_to_px(y, bottom, 0.0, mean_axis_max)))
-        for x, y in zip(plot_eps, mean_vertices)
+        for x, y in zip(plot_eps, mean_vertices, strict=True)
     ]
 
     plot_line(draw, top_preservation, blue, width=sw(2.3), radius=sw(4.5))
@@ -625,12 +645,14 @@ def plot_curve(rows, out_png=None, out_pdf=None):
     }
     tick_labels = [format_epsilon_label(value) for value in epsilons]
     labeled_index = 0
-    for eps, label in zip(plot_eps, tick_labels):
+    for eps, label in zip(plot_eps, tick_labels, strict=True):
         original_eps = 0.0 if label == "0" else float(label.replace("e", "e"))
         if not any(abs(original_eps - item) < 1e-12 for item in labeled_eps):
             continue
         x = x_to_px(eps)
-        draw.line((s(x), s(bottom[3]), s(x), s(bottom[3] + 12)), fill=axis, width=sw(1.3))
+        draw.line(
+            (s(x), s(bottom[3]), s(x), s(bottom[3] + 12)), fill=axis, width=sw(1.3)
+        )
         label_width = text_width(label, tick_font)
         label_x = min(max(x, bottom[0] + label_width / 2), bottom[2] - label_width / 2)
         label_y = bottom[3] + 36 + (labeled_index % 2) * 52
@@ -658,9 +680,11 @@ def plot_curve(rows, out_png=None, out_pdf=None):
         try:
             rgb_image.save(out_pdf, "PDF", resolution=300.0)
         except PermissionError:
-            fallback_pdf = str(Path(out_pdf).with_name(
-                f"{Path(out_pdf).stem}_updated{Path(out_pdf).suffix}"
-            ))
+            fallback_pdf = str(
+                Path(out_pdf).with_name(
+                    f"{Path(out_pdf).stem}_updated{Path(out_pdf).suffix}"
+                )
+            )
             rgb_image.save(fallback_pdf, "PDF", resolution=300.0)
             print(
                 f"Could not overwrite locked PDF {out_pdf}; "
@@ -720,7 +744,7 @@ def main():
     )
 
     suffix = (
-        f"{args.split}_thr{int(round(threshold * 100)):03d}_"
+        f"{args.split}_thr{round(threshold * 100):03d}_"
         f"area{int(min_area):04d}_open{int(open_kernel_size)}"
     )
     out_csv = args.out_csv or (
@@ -792,13 +816,15 @@ def main():
         )
         contours = mask_to_contours(post_mask, min_area=0)
         _, _, original_total_vertices = summarize_vertices(vertex_counts(contours))
-        image_records.append({
-            "post_mask": post_mask.astype(bool),
-            "target_mask": target_mask,
-            "contours": contours,
-            "post_area": int(post_mask.sum()),
-            "original_total_vertices": original_total_vertices,
-        })
+        image_records.append(
+            {
+                "post_mask": post_mask.astype(bool),
+                "target_mask": target_mask,
+                "contours": contours,
+                "post_area": int(post_mask.sum()),
+                "original_total_vertices": original_total_vertices,
+            }
+        )
 
     rows = compute_curve_rows(
         image_records=image_records,

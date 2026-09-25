@@ -5,7 +5,7 @@ from seg2gis.metrics import boundary_metrics_multi
 
 def make_square_mask(top, left, size, shape=(32, 32)):
     mask = np.zeros(shape, dtype=bool)
-    mask[top:top + size, left:left + size] = True
+    mask[top : top + size, left : left + size] = True
     return mask
 
 

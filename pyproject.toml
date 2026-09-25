@@ -64,6 +64,16 @@ where = ["."]
 include = ["seg2gis*"]
 namespaces = false
 
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9", "F",  # Core Python errors
+    "I", "B", "UP", "C4", "RUF",  # Imports and common correctness checks
+    "BLE001", "DTZ005", "PIE810", "PLR1704", "TRY004",
+]
+
 [tool.uv]
 environments = ["sys_platform == 'linux'"]
 conflicts = [

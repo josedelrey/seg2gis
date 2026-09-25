@@ -130,8 +130,6 @@ def boundary_metrics_multi(pred_mask, target_mask, tolerances=(2, 5), eps=1e-7):
         metrics[f"boundary_precision_{suffix}"] = tolerance_metrics[
             "boundary_precision"
         ]
-        metrics[f"boundary_recall_{suffix}"] = tolerance_metrics[
-            "boundary_recall"
-        ]
+        metrics[f"boundary_recall_{suffix}"] = tolerance_metrics["boundary_recall"]
 
     return metrics

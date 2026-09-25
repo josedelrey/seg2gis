@@ -9,7 +9,6 @@ from pathlib import Path
 
 import yaml
 
-
 DEFAULT_EXPERIMENT_CONFIG = "configs/experiments_phase2_augmentation_boundary_loss.yaml"
 DEFAULT_PROJECT_CONFIG = "configs/default.json"
 
@@ -93,7 +92,7 @@ def load_experiment_config(path):
         config = yaml.safe_load(f)
 
     if not isinstance(config, dict):
-        raise ValueError("Experiment config must be a YAML mapping.")
+        raise TypeError("Experiment config must be a YAML mapping.")
 
     experiments = config.get("experiments")
 
@@ -113,7 +112,7 @@ def load_project_config(path):
         config = json.load(f)
 
     if not isinstance(config, dict):
-        raise ValueError("Project config must be a JSON object.")
+        raise TypeError("Project config must be a JSON object.")
 
     return config
 
@@ -167,8 +166,7 @@ def build_training_config(base_config, exp):
 
 def write_training_config(config, config_dir, run_name):
     safe_run_name = "".join(
-        char if char.isalnum() or char in ("-", "_") else "_"
-        for char in run_name
+        char if char.isalnum() or char in ("-", "_") else "_" for char in run_name
     )
     config_path = Path(config_dir) / f"{safe_run_name}.json"
 
@@ -181,15 +179,11 @@ def write_training_config(config, config_dir, run_name):
 
 def validate_experiment(exp):
     missing = [
-        field
-        for field in REQUIRED_EXPERIMENT_FIELDS
-        if exp.get(field) in (None, "")
+        field for field in REQUIRED_EXPERIMENT_FIELDS if exp.get(field) in (None, "")
     ]
 
     if missing:
-        raise ValueError(
-            f"Experiment is missing required fields {missing}: {exp}"
-        )
+        raise ValueError(f"Experiment is missing required fields {missing}: {exp}")
 
 
 def build_command(config_path):
@@ -201,7 +195,7 @@ def print_command(command):
 
 
 def format_duration(seconds):
-    seconds = int(round(seconds))
+    seconds = round(seconds)
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
 
@@ -215,7 +209,7 @@ def format_duration(seconds):
 
 
 def format_eta(seconds_from_now):
-    finish_time = datetime.now() + timedelta(seconds=seconds_from_now)
+    finish_time = datetime.now().astimezone() + timedelta(seconds=seconds_from_now)
     return finish_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -255,12 +249,9 @@ def main():
         defaults = {}
 
     if not isinstance(defaults, dict):
-        raise ValueError("defaults must be a mapping when provided.")
+        raise TypeError("defaults must be a mapping when provided.")
 
-    experiments = [
-        merge_defaults(defaults, exp)
-        for exp in config["experiments"]
-    ]
+    experiments = [merge_defaults(defaults, exp) for exp in config["experiments"]]
 
     print("Experiment config:", args.experiments_config)
     print("Project config:", args.project_config)
@@ -320,8 +311,7 @@ def main():
             experiment_duration = time.monotonic() - experiment_start_time
             completed_durations.append(experiment_duration)
             print(
-                f"Finished {exp['run_name']} in "
-                f"{format_duration(experiment_duration)}"
+                f"Finished {exp['run_name']} in {format_duration(experiment_duration)}"
             )
 
         remaining_after_current = len(experiments) - idx

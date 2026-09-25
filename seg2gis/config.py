@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
 
-
 DEFAULT_CONFIG_PATH = "configs/default.json"
 
 
 def load_config(path=DEFAULT_CONFIG_PATH):
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 

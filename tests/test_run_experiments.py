@@ -3,7 +3,6 @@ import sys
 import types
 import unittest
 
-
 sys.modules.setdefault("yaml", types.ModuleType("yaml"))
 
 from scripts.run_experiments import build_training_config  # noqa: E402

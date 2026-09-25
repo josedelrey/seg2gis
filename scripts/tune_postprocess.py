@@ -7,12 +7,16 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config, resolve_model_path
+from seg2gis.config import (
+    DEFAULT_CONFIG_PATH,
+    get_config_value,
+    load_config,
+    resolve_model_path,
+)
 from seg2gis.dataset import collect_image_mask_pairs, describe_image_ids, image_id_list
 from seg2gis.gis_utils import load_model, load_rgb_image, predict_full_image_tiled
 from seg2gis.metrics import confusion_from_masks, metrics_from_confusion
 from seg2gis.postprocess import postprocess_mask
-
 
 try:
     import torch
@@ -54,7 +58,11 @@ def parse_args():
         description="Tune postprocessing on the INRIA validation split only.",
     )
     parser.add_argument("--config", type=str, default=DEFAULT_CONFIG_PATH)
-    parser.add_argument("--out_csv", type=str, default="results/tables/postprocess_tuning_exploratory.csv")
+    parser.add_argument(
+        "--out_csv",
+        type=str,
+        default="results/tables/postprocess_tuning_exploratory.csv",
+    )
     parser.add_argument("--thresholds", type=str, default="0.30:0.80:0.01")
     parser.add_argument("--min_areas", type=str, default="0,64,128,256,500,1000")
     parser.add_argument("--open_kernel_sizes", type=str, default="0,3,5")
@@ -137,11 +145,13 @@ def cache_validation_predictions(
                 f"{prob_map.shape} vs {target_mask.shape}"
             )
 
-        cached_images.append({
-            "image_path": image_path,
-            "prob_map": prob_map,
-            "target_mask": target_mask,
-        })
+        cached_images.append(
+            {
+                "image_path": image_path,
+                "prob_map": prob_map,
+                "target_mask": target_mask,
+            }
+        )
 
     return cached_images
 
@@ -248,7 +258,7 @@ def main():
     if args.max_images is not None:
         if args.max_images <= 0:
             raise ValueError("--max_images must be greater than 0 when provided.")
-        pairs = pairs[:args.max_images]
+        pairs = pairs[: args.max_images]
 
     print("Device:", DEVICE)
     print("Experiment:", run_name)
@@ -263,7 +273,11 @@ def main():
     print("Full-image source masks:", mask_dir)
     print("Tile size:", tile_size)
     print("Stride:", stride)
-    print("Thresholds:", f"{thresholds[0]:.2f}..{thresholds[-1]:.2f}", f"({len(thresholds)})")
+    print(
+        "Thresholds:",
+        f"{thresholds[0]:.2f}..{thresholds[-1]:.2f}",
+        f"({len(thresholds)})",
+    )
     print("Min areas:", ",".join(str(item) for item in min_areas))
     print("Open kernel sizes:", ",".join(str(item) for item in open_kernel_sizes))
     print("Selection metric:", args.metric)
@@ -302,31 +316,33 @@ def main():
             min_area=min_area,
             open_kernel_size=open_kernel_size,
         )
-        rows.append({
-            "run_name": run_name,
-            "architecture": architecture,
-            "encoder": encoder,
-            "protocol": protocol,
-            "split": "val",
-            "image_ids": describe_image_ids(val_image_ids),
-            "n_images": len(cached_images),
-            "tile_size": tile_size,
-            "stride": stride,
-            "selection_metric": args.metric,
-            "threshold": threshold,
-            "min_area": min_area,
-            "open_kernel_size": open_kernel_size,
-            "iou_building": metrics["iou_building"],
-            "dice_f1": metrics["dice_f1"],
-            "precision": metrics["precision"],
-            "recall": metrics["recall"],
-            "accuracy": metrics["accuracy"],
-            "tp": metrics["tp"],
-            "fp": metrics["fp"],
-            "fn": metrics["fn"],
-            "tn": metrics["tn"],
-            "is_best": False,
-        })
+        rows.append(
+            {
+                "run_name": run_name,
+                "architecture": architecture,
+                "encoder": encoder,
+                "protocol": protocol,
+                "split": "val",
+                "image_ids": describe_image_ids(val_image_ids),
+                "n_images": len(cached_images),
+                "tile_size": tile_size,
+                "stride": stride,
+                "selection_metric": args.metric,
+                "threshold": threshold,
+                "min_area": min_area,
+                "open_kernel_size": open_kernel_size,
+                "iou_building": metrics["iou_building"],
+                "dice_f1": metrics["dice_f1"],
+                "precision": metrics["precision"],
+                "recall": metrics["recall"],
+                "accuracy": metrics["accuracy"],
+                "tp": metrics["tp"],
+                "fp": metrics["fp"],
+                "fn": metrics["fn"],
+                "tn": metrics["tn"],
+                "is_best": False,
+            }
+        )
 
     best_row = max(rows, key=lambda row: best_sort_key(row, args.metric))
     best_row["is_best"] = True
