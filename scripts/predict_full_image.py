@@ -73,7 +73,7 @@ def apply_config(args, config):
         config,
         "inference",
         "model_path",
-        default="models/unet_effb3_256_noaug_e10.pth",
+        default="models/seg2gis.pth",
     )
     args.architecture = select_value(
         args.architecture,
@@ -136,7 +136,7 @@ def apply_config(args, config):
         config,
         "inference",
         "vector_min_area",
-        default=args.polygon_min_area,
+        default=0.0,
     )
     args.epsilon_ratio = select_value(
         args.epsilon_ratio,
