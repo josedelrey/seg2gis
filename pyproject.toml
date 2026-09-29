@@ -11,7 +11,7 @@ requires-python = ">=3.11,<3.12"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
-    { name = "José del Rey Ortega" },
+    { name = "José del Rey" },
 ]
 keywords = [
     "building-footprints",
