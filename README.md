@@ -14,8 +14,8 @@ encoder, plus code to train and evaluate a model on labelled imagery.
 
 ## Install
 
-Requires Linux, Python 3.11, [Git](https://git-scm.com/downloads), and
-[uv](https://docs.astral.sh/uv/getting-started/installation/).
+Supported on Linux with Python 3.11. Requires [Git](https://git-scm.com/downloads)
+and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ```bash
 git clone https://github.com/josedelrey/seg2gis.git
