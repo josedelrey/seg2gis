@@ -21,6 +21,7 @@ and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 git clone https://github.com/josedelrey/seg2gis.git
 cd seg2gis
 uv sync --locked --extra cpu
+source .venv/bin/activate
 ```
 
 For an NVIDIA GPU with CUDA 12.6 support, install the CUDA dependencies instead:
@@ -36,7 +37,7 @@ as `models/seg2gis.pth`. The input must be a three-band RGB georeferenced
 raster. Run inference with:
 
 ```bash
-.venv/bin/python scripts/predict_full_image.py \
+python scripts/predict_full_image.py \
   --config configs/pretrained_unet_effb3.json \
   --image_path "path/to/rgb-raster.tif" \
   --output_name "prediction"
@@ -79,7 +80,7 @@ its three image ID lists to `[]`. Those IDs describe the INRIA split and are
 not used to load the prepared tiles. Then train:
 
 ```bash
-.venv/bin/python -m seg2gis.train --config path/to/your-config.json
+python -m seg2gis.train --config path/to/your-config.json
 ```
 
 The best checkpoint is saved under `model.model_dir` as `<run_name>.pth`. To
@@ -103,8 +104,11 @@ full protocol, vector metrics, and reproduction steps.
 
 ## Tests
 
+After installing dependencies, run the unit tests from the repository root.
+They cover data loading, prediction, postprocessing, metrics, and GeoJSON export.
+
 ```bash
-.venv/bin/python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 ```
 
 ## Citation and license
