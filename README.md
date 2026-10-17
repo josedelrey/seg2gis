@@ -10,7 +10,9 @@ building mask, cleans the mask, traces polygons, and exports georeferenced
 GeoJSON. The repository includes a pretrained U-Net with an EfficientNet-B3
 encoder, plus code to train and evaluate a model on labelled imagery.
 
-![Input image, probability map, cleaned mask, and polygon overlay](results/figures/building_footprint_showcase.png)
+| Input crop | Probability map | Clean mask | Polygon overlay |
+| :---: | :---: | :---: | :---: |
+| ![Input crop](results/figures/building_footprint_input_crop.png) | ![Probability map](results/figures/building_footprint_probability_map.png) | ![Clean mask](results/figures/building_footprint_clean_mask.png) | ![Polygon overlay](results/figures/building_footprint_polygon_overlay.png) |
 
 ## Install
 
