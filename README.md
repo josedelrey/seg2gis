@@ -12,7 +12,7 @@ encoder, plus code to train and evaluate a model on labelled imagery.
 
 | Input crop | Probability map | Clean mask | Polygon overlay |
 | :---: | :---: | :---: | :---: |
-| <img src="results/figures/building_footprint_input_crop.png" alt="Input crop" width="180" height="180"> | <img src="results/figures/building_footprint_probability_map.png" alt="Probability map" width="180" height="180"> | <img src="results/figures/building_footprint_clean_mask.png" alt="Clean mask" width="180" height="180"> | <img src="results/figures/building_footprint_polygon_overlay.png" alt="Polygon overlay" width="180" height="180"> |
+| <img src="results/figures/building_footprint_input_crop.png" alt="Input crop" width="180" height="180" align="middle"> | <img src="results/figures/building_footprint_probability_map.png" alt="Probability map" width="180" height="180" align="middle"> | <img src="results/figures/building_footprint_clean_mask.png" alt="Clean mask" width="180" height="180" align="middle"> | <img src="results/figures/building_footprint_polygon_overlay.png" alt="Polygon overlay" width="180" height="180" align="middle"> |
 
 ## Install
 
