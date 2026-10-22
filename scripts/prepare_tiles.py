@@ -1,6 +1,7 @@
 import argparse
 import os
 import shutil
+import tempfile
 from glob import glob
 from pathlib import Path
 
@@ -82,9 +83,14 @@ def get_test_files(test_image_dir):
     test_images = sorted(glob(os.path.join(test_image_dir, "*.tif")))
 
     if len(test_images) == 0:
-        print(f"Warning: no test images found in: {test_image_dir}")
+        raise RuntimeError(f"No test images found in: {test_image_dir}")
 
     return test_images
+
+
+def write_tile(path, image):
+    if not cv2.imwrite(os.fspath(path), image):
+        raise OSError(f"Could not write tile: {path}")
 
 
 def tile_image_and_mask(img, mask, tile_size, stride):
@@ -138,6 +144,13 @@ def process_labeled_split(split, pairs, out_dir, tile_size, stride):
             if mask is None:
                 raise RuntimeError(f"Could not read mask: {mask_path}")
 
+            if img.shape[:2] != mask.shape[:2]:
+                raise ValueError(
+                    f"Image/mask dimensions differ: {img_path}, {mask_path}"
+                )
+            if min(img.shape[:2]) < tile_size:
+                raise ValueError(f"Image is smaller than tile_size: {img_path}")
+
             mask = (mask > 127).astype(np.uint8) * 255
 
             base_name = os.path.splitext(os.path.basename(img_path))[0]
@@ -149,16 +162,17 @@ def process_labeled_split(split, pairs, out_dir, tile_size, stride):
                 out_img_path = os.path.join(out_dir, split, "images", name)
                 out_mask_path = os.path.join(out_dir, split, "masks", name)
 
-                cv2.imwrite(out_img_path, tile_img)
-                cv2.imwrite(out_mask_path, tile_mask)
+                write_tile(out_img_path, tile_img)
+                write_tile(out_mask_path, tile_mask)
 
             total_tiles += len(tiles)
 
         print(f"{split_name} done. Saved {total_tiles} tiles.")
 
 
-def process_inria_official_test_unlabeled(test_image_dir, out_dir, tile_size, stride):
-    official_test_images = get_test_files(test_image_dir)
+def process_inria_official_test_unlabeled(
+    official_test_images, out_dir, tile_size, stride
+):
 
     print("Processing INRIA official unlabeled test set...")
 
@@ -176,6 +190,9 @@ def process_inria_official_test_unlabeled(test_image_dir, out_dir, tile_size, st
                 f"Could not read INRIA official unlabeled test image: {img_path}"
             )
 
+        if min(img.shape[:2]) < tile_size:
+            raise ValueError(f"Image is smaller than tile_size: {img_path}")
+
         base_name = os.path.splitext(os.path.basename(img_path))[0]
         tiles = tile_image_only(img, tile_size, stride)
 
@@ -187,11 +204,49 @@ def process_inria_official_test_unlabeled(test_image_dir, out_dir, tile_size, st
                 "images",
                 name,
             )
-            cv2.imwrite(out_img_path, tile_img)
+            write_tile(out_img_path, tile_img)
 
         total_tiles += len(tiles)
 
     print(f"INRIA official unlabeled test done. Saved {total_tiles} tiles.")
+
+
+def prepare_tiles(
+    out_dir, split_pairs, official_test_images, tile_size, stride, protected_paths=()
+):
+    """Generate a complete replacement before moving any existing tiles."""
+    if tile_size <= 0 or stride <= 0 or stride > tile_size:
+        raise ValueError("Require 0 < stride <= tile_size.")
+    repo_root = Path(__file__).resolve().parents[1]
+    output_path = resolve_safe_tile_output_dir(out_dir, repo_root, protected_paths)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(
+        dir=output_path.parent, prefix=f".{output_path.name}-"
+    ) as temporary_dir:
+        staging_path = Path(temporary_dir) / "tiles"
+        reset_output_dir(staging_path, protected_paths)
+        for split, pairs in split_pairs.items():
+            process_labeled_split(split, pairs, staging_path, tile_size, stride)
+        if official_test_images:
+            process_inria_official_test_unlabeled(
+                official_test_images, staging_path, tile_size, stride
+            )
+
+        # Keep the backup outside the staging directory so a failed rollback
+        # cannot cause automatic cleanup to delete the original tiles.
+        backup_path = Path(f"{temporary_dir}-previous")
+        had_output = output_path.exists()
+        if had_output:
+            os.replace(output_path, backup_path)
+        try:
+            os.replace(staging_path, output_path)
+        except OSError:
+            if had_output:
+                os.replace(backup_path, output_path)
+            raise
+        if had_output:
+            shutil.rmtree(backup_path)
 
 
 def main():
@@ -281,39 +336,27 @@ def main():
     print("Validation image ids:", describe_image_ids(val_image_ids))
     print("Test image ids:", describe_image_ids(test_image_ids))
 
-    reset_output_dir(
+    split_ids = {"train": train_image_ids, "val": val_image_ids, "test": test_image_ids}
+    seen_ids = set()
+    for split, image_ids in split_ids.items():
+        if seen_ids.intersection(image_ids):
+            raise ValueError(f"Overlapping image IDs in {split} split.")
+        seen_ids.update(image_ids)
+    split_pairs = {
+        split: collect_image_mask_pairs(image_dir, mask_dir, image_ids)
+        for split, image_ids in split_ids.items()
+    }
+    official_test_images = (
+        get_test_files(test_image_dir) if test_image_dir is not None else []
+    )
+    prepare_tiles(
         out_dir,
+        split_pairs,
+        official_test_images,
+        tile_size,
+        stride,
         protected_paths=(image_dir, mask_dir, test_image_dir),
     )
-    process_labeled_split(
-        "train",
-        collect_image_mask_pairs(image_dir, mask_dir, train_image_ids),
-        out_dir,
-        tile_size,
-        stride,
-    )
-    process_labeled_split(
-        "val",
-        collect_image_mask_pairs(image_dir, mask_dir, val_image_ids),
-        out_dir,
-        tile_size,
-        stride,
-    )
-    process_labeled_split(
-        "test",
-        collect_image_mask_pairs(image_dir, mask_dir, test_image_ids),
-        out_dir,
-        tile_size,
-        stride,
-    )
-
-    if test_image_dir is not None:
-        process_inria_official_test_unlabeled(
-            test_image_dir,
-            out_dir,
-            tile_size,
-            stride,
-        )
 
     print("All tiling completed.")
 

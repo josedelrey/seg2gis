@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -90,6 +91,24 @@ class PredictionCacheTests(unittest.TestCase):
         self.save_cache(self.new_cache())
 
         self.assert_cache_miss(self.new_cache(refresh=True))
+
+    def test_headless_opencv_upgrade_invalidates_cache(self):
+        from importlib.metadata import version
+
+        with patch(
+            "seg2gis.prediction_cache.importlib.metadata.version",
+            side_effect=lambda name: (
+                "4.10.0" if name == "opencv-python-headless" else version(name)
+            ),
+        ):
+            self.save_cache(self.new_cache())
+        with patch(
+            "seg2gis.prediction_cache.importlib.metadata.version",
+            side_effect=lambda name: (
+                "4.11.0" if name == "opencv-python-headless" else version(name)
+            ),
+        ):
+            self.assert_cache_miss(self.new_cache())
 
     def test_legacy_cache_without_metadata_is_ignored(self):
         self.cache_path.parent.mkdir(parents=True)

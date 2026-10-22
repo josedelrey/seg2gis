@@ -1,5 +1,6 @@
 # Dataset and generated tiles
 data/
+local_inputs/
 
 # Generated per-run configurations
 configs/generated/

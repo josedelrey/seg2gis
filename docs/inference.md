@@ -26,6 +26,9 @@ RFC 7946 GeoJSON, reproject the polygons to WGS84 longitude/latitude first.
 PNG and NumPy outputs use image pixel coordinates. Use `--no_export_vectors`
 for raster-only output.
 
+Polygons follow pixel edges and retain courtyard holes. Simplification preserves
+polygon topology. The overlay includes both exterior and interior rings.
+
 ## Settings
 
 Command-line options override configuration values. The pretrained config uses:
@@ -37,8 +40,8 @@ Command-line options override configuration values. The pretrained config uses:
 | `--threshold` | `0.47` | Probability cutoff for the building mask |
 | `--min_area` | `100` | Minimum connected-component size in pixels |
 | `--open_kernel_size` | `3` | Morphological opening kernel width and height in pixels |
-| `--polygon_min_area` | `0` | Minimum contour area in square pixels before simplification |
-| `--epsilon_ratio` | `0.002` | Simplification tolerance as a fraction of contour perimeter |
+| `--polygon_min_area` | `0` | Minimum polygon area in square pixels before simplification |
+| `--epsilon_ratio` | `0.002` | Simplification tolerance as a fraction of the exterior perimeter |
 | `--vector_min_area` | `0` | Minimum exported polygon area in squared CRS units |
 
 `--vector_min_area` uses the raster CRS's squared units. For rasters with

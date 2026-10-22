@@ -5,6 +5,8 @@ import os
 import cv2
 import rasterio
 import torch
+from shapely.affinity import affine_transform
+from shapely.geometry import mapping
 
 from seg2gis.config import DEFAULT_CONFIG_PATH, get_config_value, load_config
 from seg2gis.gis_utils import (
@@ -17,6 +19,7 @@ from seg2gis.gis_utils import (
     threshold_probability_map,
 )
 from seg2gis.postprocess import postprocess_mask
+from seg2gis.vectorize import draw_polygon_geometries, mask_to_pixel_polygons
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -280,129 +283,34 @@ def generate_masks(args, prob_map):
     return raw_mask, clean_mask
 
 
-def mask_to_contours(mask, min_area=64):
-    mask_uint8 = (mask > 0).astype("uint8") * 255
-
-    contours, _ = cv2.findContours(
-        mask_uint8,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE,
-    )
-
-    filtered = []
-
-    for contour in contours:
-        area = cv2.contourArea(contour)
-
-        if area >= min_area:
-            filtered.append(contour)
-
-    return filtered
-
-
-def simplify_contours(contours, epsilon_ratio=0.01):
-    simplified = []
-
-    for contour in contours:
-        perimeter = cv2.arcLength(contour, closed=True)
-        epsilon = epsilon_ratio * perimeter
-
-        polygon = cv2.approxPolyDP(
-            contour,
-            epsilon,
-            closed=True,
-        )
-
-        if len(polygon) >= 3:
-            simplified.append(polygon)
-
-    return simplified
-
-
-def draw_polygons_on_image(image_rgb, polygons, color=(255, 0, 0), thickness=2):
-    overlay = image_rgb.copy()
-
-    cv2.drawContours(
-        overlay,
-        polygons,
-        contourIdx=-1,
-        color=color,
-        thickness=thickness,
-    )
-
-    return overlay
-
-
 def generate_polygon_overlay(args, image_rgb, clean_mask):
-    contours = mask_to_contours(
+    polygons = mask_to_pixel_polygons(
         clean_mask,
         min_area=args.polygon_min_area,
-    )
-
-    polygons = simplify_contours(
-        contours,
         epsilon_ratio=args.epsilon_ratio,
     )
-
-    overlay_rgb = draw_polygons_on_image(
-        image_rgb=image_rgb,
-        polygons=polygons,
-        color=(255, 0, 0),
-        thickness=2,
-    )
-
-    print("Extracted contours:", len(contours))
-    print("Simplified polygons:", len(polygons))
-
+    overlay_rgb = draw_polygon_geometries(image_rgb, polygons)
+    print("Extracted polygons:", len(polygons))
     return overlay_rgb, polygons
 
 
-def ring_area(coords):
-    if len(coords) < 4:
-        return 0.0
-
-    total = 0.0
-
-    for i in range(len(coords) - 1):
-        x1, y1 = coords[i]
-        x2, y2 = coords[i + 1]
-        total += x1 * y2 - x2 * y1
-
-    return abs(total) * 0.5
-
-
-def cv_contour_to_geojson_feature(contour, transform, min_area):
-    coordinates = []
-
-    for point in contour[:, 0, :]:
-        col = float(point[0])
-        row = float(point[1])
-        x, y = transform * (col, row)
-        coordinates.append([float(x), float(y)])
-
-    if len(coordinates) < 3:
+def polygon_to_geojson_feature(polygon, transform, min_area):
+    geometry = affine_transform(
+        polygon,
+        [transform.a, transform.b, transform.d, transform.e, transform.c, transform.f],
+    )
+    if min_area is not None and min_area > 0 and geometry.area < min_area:
         return None
-
-    if coordinates[0] != coordinates[-1]:
-        coordinates.append(coordinates[0])
-
-    area = ring_area(coordinates)
-    area_px = float(cv2.contourArea(contour))
-
-    if min_area is not None and min_area > 0 and area < min_area:
-        return None
-
     return {
         "type": "Feature",
         "properties": {
-            "area": float(area),
-            "area_px": area_px,
-            "vertices": len(contour),
+            "area": float(geometry.area),
+            "area_px": float(polygon.area),
+            "vertices": sum(
+                len(ring.coords) - 1 for ring in (polygon.exterior, *polygon.interiors)
+            ),
         },
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": [coordinates],
-        },
+        "geometry": mapping(geometry),
     }
 
 
@@ -427,9 +335,9 @@ def save_geojson_from_polygons(
 
     features = []
 
-    for contour in polygons:
-        feature = cv_contour_to_geojson_feature(
-            contour=contour,
+    for polygon in polygons:
+        feature = polygon_to_geojson_feature(
+            polygon=polygon,
             transform=transform,
             min_area=min_area,
         )

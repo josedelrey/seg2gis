@@ -48,6 +48,12 @@ component area `100 px`, opening kernel `3 px`, and Douglas–Peucker epsilon ra
 | Component AP @ IoU 0.50 | 0.6021 |
 | Component AP @ IoU 0.75 | 0.3826 |
 
+These vector scores describe the original OpenCV external-contour pipeline,
+which remains in the diagnostic scripts for reproducibility. The inference
+CLI now traces pixel edges and preserves courtyard holes. Its exported geometry
+differs from that historical pipeline, so these vector scores do not measure
+the corrected exporter. Segmentation scores are unaffected.
+
 Detailed results:
 [model selection](../results/tables/phase2_augmentation_training_metrics.csv),
 [full-image validation](../results/tables/phase2_full_image_validation_metrics_by_city.csv),
@@ -81,6 +87,9 @@ python scripts/prepare_tiles.py --config configs/default.json
 ```
 
 This applies the scene-level split above, then extracts `256 × 256 px` tiles.
+Replacement tiles are generated in a temporary directory before replacing an
+existing tile set. The previous tiles are retained if generation fails.
+Allow enough free disk space for the replacement alongside the existing tiles.
 
 ### 2. Train the model
 
@@ -112,8 +121,9 @@ These commands reproduce the fixed `0.50/500/5` full-image baseline.
 
 ### 4. Export building polygons
 
-Export a scene with the vector settings. Setting both polygon area filters to
-zero matches the extraction used in the vector diagnostics:
+Export a scene with the selected vector settings. The current exporter preserves
+pixel edges and holes. Use the diagnostic scripts to reproduce historical vector
+scores:
 
 ```bash
 CFG="configs/generated/phase2_unet_effb3_aug_boundary_bce_w2_e50.json"

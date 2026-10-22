@@ -101,7 +101,9 @@ The held-out test uses five labelled scenes from each of the five cities.
 | Held-out test | 0.7876 | 0.8812 |
 
 On the held-out scenes, exported polygons reach **0.7736 polygon-raster IoU**,
-and 99.46% are valid. See the [INRIA experiments](docs/experiments.md) for the
+and 99.46% are valid with the original contour exporter. These historical vector
+scores have not been recomputed for the corrected pixel-edge exporter, which
+preserves courtyard holes. See the [INRIA experiments](docs/experiments.md) for the
 full protocol, vector metrics, and reproduction steps.
 
 ## Tests
@@ -121,4 +123,9 @@ and P. Alliez in
 IGARSS 2017.
 
 The code and released checkpoint are covered by the [MIT License](LICENSE).
-The INRIA dataset has its own terms.
+The INRIA dataset and upstream pretrained weights have their own terms.
+Training initializes the encoder from
+[EfficientNet-B3 ImageNet weights](https://huggingface.co/smp-hub/efficientnet-b3.imagenet/blob/074c54a6c473e0d294690d49cedb6cf463e7127d/README.md),
+whose upstream model card lists its license as `other`. Review that provenance
+before relying on the checkpoint for commercial redistribution. The imagery in
+the figures comes from the INRIA dataset cited above.

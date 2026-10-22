@@ -8,6 +8,42 @@ from rasterio.features import shapes
 from shapely.geometry import shape
 
 
+def mask_to_pixel_polygons(mask, min_area=0, epsilon_ratio=0):
+    """Trace pixel edges and preserve interior rings during simplification."""
+    if min_area < 0 or not np.isfinite(min_area):
+        raise ValueError("min_area must be finite and nonnegative.")
+    if epsilon_ratio < 0 or not np.isfinite(epsilon_ratio):
+        raise ValueError("epsilon_ratio must be finite and nonnegative.")
+
+    binary = (np.asarray(mask) > 0).astype(np.uint8)
+    if binary.ndim != 2:
+        raise ValueError("mask must be a two-dimensional array.")
+
+    polygons = []
+    for geometry, _ in shapes(binary, mask=binary.astype(bool)):
+        polygon = shape(geometry)
+        if polygon.area < min_area:
+            continue
+        tolerance = epsilon_ratio * polygon.exterior.length
+        if tolerance:
+            polygon = polygon.simplify(tolerance, preserve_topology=True)
+        polygons.append(polygon)
+    return polygons
+
+
+def draw_polygon_geometries(image_rgb, polygons, color=(255, 0, 0), thickness=2):
+    """Draw exterior and interior pixel-coordinate polygon rings."""
+    overlay = image_rgb.copy()
+    rings = [
+        np.rint(ring.coords).astype(np.int32).reshape(-1, 1, 2)
+        for polygon in polygons
+        for ring in (polygon.exterior, *polygon.interiors)
+    ]
+    if rings:
+        cv2.polylines(overlay, rings, True, color, thickness)
+    return overlay
+
+
 def validate_area_filter_crs(crs, min_area, allow_geographic_area=False):
     if min_area is None or min_area <= 0:
         return
