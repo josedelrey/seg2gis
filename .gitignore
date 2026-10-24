@@ -30,6 +30,8 @@ outputs/
 results/cache/
 results/full_predictions/
 results/qualitative/
+results/figures/
+results/tables/
 
 *.zip
 *.7z

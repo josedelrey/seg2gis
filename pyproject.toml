@@ -1,33 +1,12 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=84.1.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "seg2gis"
 version = "1.0.0"
 description = "Building footprint segmentation and georeferenced vector export"
-readme = "README.md"
 requires-python = ">=3.11,<3.12"
-license = "MIT"
-license-files = ["LICENSE"]
-authors = [
-    { name = "José del Rey" },
-]
-keywords = [
-    "building-footprints",
-    "deep-learning",
-    "geospatial",
-    "image-segmentation",
-    "remote-sensing",
-]
-classifiers = [
-    "Intended Audience :: Science/Research",
-    "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Scientific/Engineering :: GIS",
-]
 dependencies = [
     "albumentations>=2.0,<2.1",
     "geopandas>=1.0,<1.2",
@@ -53,11 +32,6 @@ cuda126 = [
     "torch>=2.13,<2.14",
     "torchvision>=0.28,<0.29",
 ]
-
-[project.urls]
-Homepage = "https://github.com/josedelrey/seg2gis"
-Issues = "https://github.com/josedelrey/seg2gis/issues"
-Repository = "https://github.com/josedelrey/seg2gis.git"
 
 [tool.setuptools.packages.find]
 where = ["."]
